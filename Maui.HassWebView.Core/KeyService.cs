@@ -1,112 +1,107 @@
-using System;
 using System.Timers;
-using Timer = System.Timers.Timer;
 
 namespace Maui.HassWebView.Core
 {
-    /// <summary>
-    /// 按键服务，用于区分单击、双击和长按操作。
-    /// </summary>
-    public class KeyService : IDisposable
+    public class KeyService
     {
-        /// <summary>
-        /// 单击事件, 参数为键名字符串
-        /// </summary>
         public event Action<string> SingleClick;
-
-        /// <summary>
-        /// 双击事件, 参数为键名字符串
-        /// </summary>
         public event Action<string> DoubleClick;
-
-        /// <summary>
-        /// 长按事件, 参数为键名字符串
-        /// </summary>
         public event Action<string> LongClick;
 
-        private readonly Timer _longPressTimer;
-        private readonly Timer _doubleClickTimer;
-        private bool _isLongPress = false;
-        private bool _isPressed = false; // 跟踪按键是否已被按下
-        private string _currentKeyName; // 存储当前按下的键名字符串
+        private readonly System.Timers.Timer _longPressTimer;
+        private readonly System.Timers.Timer _clickTimer;
 
-        /// <summary>
-        /// 构造函数
-        /// </summary>
-        /// <param name="longPressTimeout">长按超时时间（毫秒）</param>
-        /// <param name="doubleClickTimeout">双击超时时间（毫秒）</param>
+        private readonly object _lock = new object();
+
+        private string _currentKeyName;
+        private bool _isLongPress = false;
+        private int _pressCount = 0;
+
         public KeyService(int longPressTimeout = 750, int doubleClickTimeout = 300)
         {
-            _longPressTimer = new Timer(longPressTimeout);
+            _longPressTimer = new System.Timers.Timer(longPressTimeout);
             _longPressTimer.Elapsed += OnLongPressTimerElapsed;
             _longPressTimer.AutoReset = false;
 
-            _doubleClickTimer = new Timer(doubleClickTimeout);
-            _doubleClickTimer.Elapsed += OnDoubleClickTimerElapsed;
-            _doubleClickTimer.AutoReset = false;
+            _clickTimer = new System.Timers.Timer(doubleClickTimeout);
+            _clickTimer.Elapsed += OnClickTimerElapsed;
+            _clickTimer.AutoReset = false;
         }
 
-        /// <summary>
-        /// 按键按下时由平台代码调用
-        /// </summary>
         internal void OnPressed(string keyName)
         {
-            if (string.IsNullOrEmpty(keyName)) return;
-
-            if (_isPressed) return; // 如果已按下，则忽略后续的按下事件
-            _isPressed = true;
-            _currentKeyName = keyName; // 存储键名
-
-            _isLongPress = false;
-            _longPressTimer.Start();
-
-            if (_doubleClickTimer.Enabled)
+            lock (_lock)
             {
-                // 检测到双击
-                _doubleClickTimer.Stop();
-                DoubleClick?.Invoke(_currentKeyName);
-            }
-            else
-            {
-                // 可能是单击的开始
-                _doubleClickTimer.Start();
+                // 忽略长按过程中的按键重复事件
+                if (_pressCount > 0 && !_clickTimer.Enabled)
+                {
+                    return;
+                }
+
+                _currentKeyName = keyName;
+                _pressCount++;
+
+                _clickTimer.Stop();
+
+                if (_pressCount == 1) // 第一次按下
+                {
+                    _isLongPress = false;
+                    _longPressTimer.Start();
+                }
+                else if (_pressCount == 2) // 第二次按下 (用于双击)
+                {
+                    _longPressTimer.Stop();
+                    DoubleClick?.Invoke(_currentKeyName);
+                    _pressCount = 0;
+                }
             }
         }
 
-        /// <summary>
-        /// 按键释放时由平台代码调用
-        /// </summary>
         internal void OnReleased()
         {
-            if (!_isPressed) return; // 只有在按下的状态才处理释放事件
-            
-            _longPressTimer.Stop();
-            _isPressed = false;
+            lock (_lock)
+            {
+                _longPressTimer.Stop();
+
+                // 如果已经触发了长按，则重置所有状态并立即返回
+                if (_isLongPress)
+                {
+                    _isLongPress = false;
+                    _pressCount = 0;
+                    return;
+                }
+
+                if (_pressCount == 1)
+                {
+                    // 启动计时器以区分单击和双击
+                    _clickTimer.Start();
+                }
+            }
         }
 
         private void OnLongPressTimerElapsed(object sender, ElapsedEventArgs e)
         {
-            _isLongPress = true;
-            LongClick?.Invoke(_currentKeyName);
-            // 长按发生，取消单击检测
-            _doubleClickTimer.Stop();
-        }
-
-        private void OnDoubleClickTimerElapsed(object sender, ElapsedEventArgs e)
-        {
-            if (!_isLongPress)
+            lock (_lock)
             {
-                SingleClick?.Invoke(_currentKeyName);
+                if (_pressCount == 1)
+                {
+                    _isLongPress = true; // 标记已发生长按
+                    LongClick?.Invoke(_currentKeyName);
+                    // 注意：此处不再重置 _pressCount，交由 OnReleased 处理
+                }
             }
         }
 
-        /// <summary>
-        /// 释放资源
-        /// </summary>
-        public void Dispose()
+        private void OnClickTimerElapsed(object sender, ElapsedEventArgs e)
         {
-            _longPressTimer.Dispose();
-            _doubleClickTimer.Dispose();
+            lock (_lock)
+            {
+                if (_pressCount == 1)
+                {
+                    SingleClick?.Invoke(_currentKeyName);
+                }
+                _pressCount = 0; // 重置状态
+            }
         }
     }
 }
