@@ -16,6 +16,51 @@ public static class MauiAppBuilderExtensions
 #endif
         });
 
+        builder.ConfigureLifecycleEvents(events =>
+            {
+#if ANDROID
+                events.AddAndroid(android =>
+                {
+                    // Hook into the main activity's creation
+                    android.OnCreate((activity, bundle) =>
+                    {
+                        QbSdk.DownloadWithoutWifi = true;
+
+                        var tbsListener = new TencentTbsListener();
+                        tbsListener.DownloadProgress += (s, e) =>
+                        {
+                            Console.WriteLine($"DownloadProgress {e}");
+                        };
+                        tbsListener.DownloadFinished += (s, e) =>
+                        {
+                            Console.WriteLine($"DownloadFinished {e}");
+                        };
+                        tbsListener.InstallFinished += (s, e) =>
+                        {
+                            Console.WriteLine($"InstallFinished {e}");
+                        };
+
+                        var preInitCallback = new PreInitCallback();
+                        preInitCallback.CoreInitFinished += (s, e) =>
+                        {
+                            Console.WriteLine("CoreInitFinished");
+                            //WebViewBtn_Clicked(null, null);
+                        };
+                        preInitCallback.ViewInitFinished += (s, e) =>
+                        {
+                            Console.WriteLine($"ViewInitFinished {e}");
+                        };
+                        QbSdk.SetTbsListener(tbsListener);
+
+                        Console.WriteLine("InitX5Environment");
+                        QbSdk.InitX5Environment(activity, preInitCallback);
+                    });
+                });
+#endif
+            });
+
+
+
         return builder;
     }
 }
