@@ -1,11 +1,11 @@
 using Microsoft.Maui.Handlers;
 using Microsoft.Web.WebView2.Core;
 using System;
+using System.Threading.Tasks;
 
 namespace Maui.HassWebView.Core.Platforms.Windows;
 
 using WebView = Microsoft.UI.Xaml.Controls.WebView2;
-
 
 public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
 {
@@ -24,20 +24,36 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
         }
     };
 
-    public static CommandMapper CommandMapper = new CommandMapper<HassWebView>()
+    public static CommandMapper CommandMapper = new CommandMapper<HassWebView>
     {
         [nameof(HassWebView.GoBack)] = (handler, view, args) =>
         {
-            if (handler.PlatformView is WebView wv)
+            if (handler.PlatformView is WebView wv && wv.CanGoBack)
             {
                 wv.GoBack();
             }
         },
         [nameof(HassWebView.GoForward)] = (handler, view, args) =>
         {
-            if (handler.PlatformView is WebView wv)
+            if (handler.PlatformView is WebView wv && wv.CanGoForward)
             {
                 wv.GoForward();
+            }
+        },
+        [nameof(HassWebView.EvaluateJavaScriptAsync)] = async (handler, _, args) =>
+        {
+            if (args is not HassWebView.EvaluateJavaScriptAsyncRequest request) return;
+            try
+            {
+                if (handler.PlatformView is WebView wv)
+                {
+                    var result = await wv.ExecuteScriptAsync(request.Script);
+                    request.TaskCompletionSource.SetResult(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                request.TaskCompletionSource.SetException(ex);
             }
         }
     };
@@ -50,13 +66,14 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
     protected override WebView CreatePlatformView()
     {
         var wv = new WebView();
-        // 初始化
         return wv;
     }
 
-    protected override void ConnectHandler(WebView platformView)
+    protected override async void ConnectHandler(WebView platformView)
     {
         base.ConnectHandler(platformView);
+        await platformView.EnsureCoreWebView2Async();
+
         var url = (VirtualView.Source as UrlWebViewSource)?.Url;
         if (!string.IsNullOrEmpty(url))
             platformView.Source = new Uri(url);
@@ -101,7 +118,6 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
 
     protected override void DisconnectHandler(WebView platformView)
     {
-        // 清理
         if (platformView.CoreWebView2 != null)
         {
             platformView.CoreWebView2.NavigationStarting -= Core_NavigationStarting;

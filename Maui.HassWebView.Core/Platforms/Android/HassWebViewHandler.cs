@@ -4,6 +4,7 @@ using Com.Tencent.Smtt.Sdk;
 using Microsoft.Maui.Handlers;
 using System.Collections.Generic;
 using Java.Lang;
+using Maui.HassWebView.Core.Platforms.Android.TencentX5;
 
 namespace Maui.HassWebView.Core.Platforms.Android;
 
@@ -30,16 +31,27 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
     {
         [nameof(HassWebView.GoBack)] = (handler, view, args) =>
         {
-            if (handler.PlatformView is WebView wv)
+            if (handler.PlatformView is WebView wv && wv.CanGoBack())
             {
                 wv.GoBack();
             }
         },
         [nameof(HassWebView.GoForward)] = (handler, view, args) =>
         {
-            if (handler.PlatformView is WebView wv)
+            if (handler.PlatformView is WebView wv && wv.CanGoForward())
             {
                 wv.GoForward();
+            }
+        },
+        [nameof(HassWebView.EvaluateJavaScriptAsync)] = (handler, _, args) =>
+        {
+            if (args is not HassWebView.EvaluateJavaScriptAsyncRequest request) return;
+            if (handler.PlatformView is WebView wv)
+            {
+                wv.EvaluateJavascript(request.Script, new X5ValueCallback((result) =>
+                {
+                    request.TaskCompletionSource.SetResult(result);
+                }));
             }
         }
     };

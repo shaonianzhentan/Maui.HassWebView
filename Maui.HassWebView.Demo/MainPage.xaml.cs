@@ -16,7 +16,7 @@ namespace Maui.HassWebView.Demo
             // Subscribe to WebView navigation events
             wv.Navigating += Wv_Navigating;
             wv.Navigated += Wv_Navigated;
-            
+
             Loaded += MainPage_Loaded;
         }
 

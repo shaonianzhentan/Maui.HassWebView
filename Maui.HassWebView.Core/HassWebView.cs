@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Maui.HassWebView.Core;
 
@@ -56,5 +58,31 @@ public class HassWebView : WebView
     internal void SendNavigated(WebNavigatedEventArgs args)
     {
         Navigated?.Invoke(this, args);
+    }
+
+    public new Task<string> EvaluateJavaScriptAsync(string script)
+    {
+        var tcs = new TaskCompletionSource<string>();
+
+        if (Handler == null)
+        {
+            tcs.SetException(new InvalidOperationException("Handler is not initialized."));
+            return tcs.Task;
+        }
+
+        Handler.Invoke(nameof(EvaluateJavaScriptAsync), new EvaluateJavaScriptAsyncRequest(tcs, script));
+        return tcs.Task;
+    }
+
+    internal class EvaluateJavaScriptAsyncRequest
+    {
+        public EvaluateJavaScriptAsyncRequest(TaskCompletionSource<string> tcs, string script)
+        {
+            TaskCompletionSource = tcs;
+            Script = script;
+        }
+
+        public TaskCompletionSource<string> TaskCompletionSource { get; }
+        public string Script { get; }
     }
 }
