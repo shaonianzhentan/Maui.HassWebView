@@ -61,13 +61,26 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
             if (args is not HassWebView.SimulateTouchRequest request) return;
             if (handler.PlatformView is not WebView platformView) return;
 
+            int[] location = new int[2];
+            platformView.GetLocationOnScreen(location);
+
+            var density = platformView.Resources.DisplayMetrics.Density;
+            float x = (float)request.X * density;
+            float y = (float)request.Y * density;
+
+            Console.WriteLine($"Cursor = {request.X}, {request.Y}");
+            Console.WriteLine($"Device density = {density}");
+            Console.WriteLine($"WebView on screen = X:{location[0]}, Y:{location[1]}");
+            Console.WriteLine($"WebView size = W:{platformView.Width}, H:{platformView.Height}");
+            Console.WriteLine($"Relative = {x}, {y}");
+
             var downTime = SystemClock.UptimeMillis();
             var eventTime = SystemClock.UptimeMillis();
 
-            var motionEventDown = MotionEvent.Obtain(downTime, eventTime, MotionEventActions.Down, request.X, request.Y, 0);
+            var motionEventDown = MotionEvent.Obtain(downTime, eventTime, MotionEventActions.Down, x, y, 0);
             platformView.DispatchTouchEvent(motionEventDown);
 
-            var motionEventUp = MotionEvent.Obtain(downTime, eventTime, MotionEventActions.Up, request.X, request.Y, 0);
+            var motionEventUp = MotionEvent.Obtain(downTime, eventTime, MotionEventActions.Up, x, y, 0);
             platformView.DispatchTouchEvent(motionEventUp);
 
             motionEventDown.Recycle();
@@ -84,7 +97,7 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
         var webView = new WebView(MauiApplication.Current.ApplicationContext);
         webView.Settings.JavaScriptEnabled = true;
         webView.Settings.JavaScriptCanOpenWindowsAutomatically = false;
-        webView.Settings.MixedContentMode = 1; // 总是允许加载图片
+        webView.Settings.MixedContentMode = 1;
         webView.Settings.JavaScriptEnabled = true;
         webView.Settings.DomStorageEnabled = true;
         webView.Settings.AllowContentAccess = true;
