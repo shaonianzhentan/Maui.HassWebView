@@ -54,9 +54,9 @@ namespace Maui.HassWebView.Demo
             wv.Navigated -= wv_Navigated;
         }
 
-        private void HandleKeyEvent(string eventType, KeyEventArgs e)
+        // Parameter type updated to RemoteKeyEventArgs
+        private void HandleKeyEvent(string eventType, RemoteKeyEventArgs e)
         {
-            // --- ADDED: Immediately release volume keys to the system ---
             if (e.KeyName == "VolumeUp" || e.KeyName == "VolumeDown")
             {
                 e.Handled = false;
@@ -144,19 +144,21 @@ namespace Maui.HassWebView.Demo
             });
         }
 
-        private void OnSingleClick(KeyEventArgs e)
-        { 
+        // Parameter type updated to RemoteKeyEventArgs
+        private void OnSingleClick(RemoteKeyEventArgs e)
+        {
             HandleKeyEvent("SingleClick", e);
         }
 
-        private void OnDoubleClick(KeyEventArgs e)
+        // Parameter type updated to RemoteKeyEventArgs
+        private void OnDoubleClick(RemoteKeyEventArgs e)
         {
             HandleKeyEvent("DoubleClick", e);
         }
 
-        private void OnLongClick(KeyEventArgs e)
+        // Parameter type updated to RemoteKeyEventArgs
+        private void OnLongClick(RemoteKeyEventArgs e)
         {
-            // --- ADDED: Immediately release volume keys to the system ---
             if (e.KeyName == "VolumeUp" || e.KeyName == "VolumeDown")
             {
                 e.Handled = false;
