@@ -75,10 +75,7 @@ namespace Maui.HassWebView.Core
                     // This part is tricky. We don't know if the original KeyDown was handled here.
                     // For simplicity and to avoid unintended side effects, we'll mark it as handled
                     // if it's not a key we'd typically let the system handle (like Volume keys).
-                    if (e.Key != VirtualKey.VolumeUp && e.Key != VirtualKey.VolumeDown)
-                    {
-                         e.Handled = true;
-                    }
+                    
                 }), true);
             });
 #endif

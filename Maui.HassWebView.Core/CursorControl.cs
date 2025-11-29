@@ -115,17 +115,81 @@ namespace Maui.HassWebView.Core
         public void VideoSeek(int sencond)
         {
             _wv.EvaluateJavaScriptAsync($@"(function() {{
-                    var video = document.querySelector('video');
+                    function findFirstVideo(doc) {{
+                        let videos = Array.from(doc.getElementsByTagName('video'))
+                            .filter(v => v.src && v.src.trim() !== '');
+                        if (videos.length > 0) return videos[0];
+
+                        let iframes = doc.getElementsByTagName('iframe');
+                        for (let i = 0; i < iframes.length; i++) {{
+                            try {{
+                                let idoc = iframes[i].contentDocument || iframes[i].contentWindow.document;
+                                if (idoc) {{
+                                    let v = findFirstVideo(idoc);
+                                    if (v) return v;
+                                }}
+                            }} catch (e) {{
+
+                            }}
+                        }}
+                        return null;
+                    }}
+                    var video = findFirstVideo(document);
                     if (video) video.currentTime += {sencond};
                 }})()");
         }
 
-        public void VideoPlayPause()
+        public async Task VideoPlayPause()
         {
-            _wv.EvaluateJavaScriptAsync($@"(function() {{
-                    var video = document.querySelector('video');
+            var result =  await _wv.EvaluateJavaScriptAsync($@"(()=>{{
+                    function findFirstVideo(doc) {{
+                        let videos = Array.from(doc.getElementsByTagName('video'))
+                            .filter(v => v.src && v.src.trim() !== '');
+                        if (videos.length > 0) return videos[0];
+
+                        let iframes = doc.getElementsByTagName('iframe');
+                        for (let i = 0; i < iframes.length; i++) {{
+                            try {{
+                                let idoc = iframes[i].contentDocument || iframes[i].contentWindow.document;
+                                if (idoc) {{
+                                    let v = findFirstVideo(idoc);
+                                    if (v) return v;
+                                }}
+                            }} catch (e) {{
+
+                            }}
+                        }}
+                        return null;
+                    }}
+                    var video = findFirstVideo(document);
                     if (video) video.paused ? video.play() : video.pause();
+                    return video ? 1 : 0
                 }})()");
+            if (result == "0")
+            {
+#if ANDROID
+                if(_wv.Handler.PlatformView is Com.Tencent.Smtt.Sdk.WebView wv)
+                {
+                    if (wv.WebChromeClient is Platforms.Android.WebChromeClientHandler wc)
+                    {
+                        var view = wc._customView;
+                        var x = (int)_wv.Width / 2;
+                                                var y = (int)_wv.Height / 2;
+                        long downTime = Android.OS.SystemClock.UptimeMillis();
+                        long eventTime = downTime + 50;
+
+                        // 按下事件
+                        var downEvent = Android.Views.MotionEvent.Obtain(downTime, eventTime, Android.Views.MotionEventActions.Down, x, y, 0);
+                        // 抬起事件
+                        var upEvent = Android.Views.MotionEvent.Obtain(downTime, eventTime + 50, Android.Views.MotionEventActions.Up, x, y, 0);
+
+                        // 派发事件到 view
+                        view.DispatchTouchEvent(downEvent);
+                        view.DispatchTouchEvent(upEvent);
+                    }
+                }
+#endif
+            }
         }
     }
 }

@@ -9,7 +9,7 @@ namespace Maui.HassWebView.Core.Platforms.Android;
 class WebChromeClientHandler : WebChromeClient
 {
     private readonly HassWebView _webView;
-    private AndroidViews.View _customView;
+    public AndroidViews.View _customView;
     private IX5WebChromeClientCustomViewCallback _customViewCallback;
 
     public WebChromeClientHandler(HassWebView webView)

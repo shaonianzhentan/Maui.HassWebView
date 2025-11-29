@@ -31,7 +31,7 @@ namespace Maui.HassWebView.Demo
 
         private void MainPage_Loaded(object? sender, EventArgs e)
         {
-            wv.Source = "http://debugx5.qq.com/";
+
         }
 
         protected override void OnAppearing()
@@ -56,17 +56,11 @@ namespace Maui.HassWebView.Demo
             wv.Navigated -= Wv_Navigated;
         }
 
-        private void HandleKeyEvent(string eventType, RemoteKeyEventArgs e)
+        private void OnSingleClick(RemoteKeyEventArgs e)
         {
-            if (e.KeyName == "VolumeUp" || e.KeyName == "VolumeDown")
-            {
-                e.Handled = false;
-                return;
-            }
 
             MainThread.BeginInvokeOnMainThread(async () =>
             {
-                Debug.WriteLine($"--- {eventType}: {e.KeyName} ---");
 
                 switch (e.KeyName)
                 {
@@ -79,9 +73,6 @@ namespace Maui.HassWebView.Demo
                         }
                         else
                         {
-                            if (eventType == "DoubleClick")
-                                await cursorControl.DoubleClick();
-                            else // SingleClick
                                 cursorControl.Click();
                         }
                         break;
@@ -89,70 +80,82 @@ namespace Maui.HassWebView.Demo
                     // Back / Escape Key
                     case "Escape":
                     case "Back":
-                        if (eventType == "SingleClick")
-                        {
+                        
                             if (wv.IsVideoFullscreen)
                                 wv.ExitFullscreen();
                             else if (wv.CanGoBack)
                                 wv.GoBack();
-                            else
-                                e.Handled = false; // Let system handle it
-                        }
                         break;
-                    
+
                     // Directional Keys (Up, Down, Left, Right)
                     case "Up":
                     case "DpadUp":
-                        if (eventType == "SingleClick") cursorControl.MoveUp();
+                        cursorControl.MoveUp();
                         break;
 
                     case "Down":
                     case "DpadDown":
-                        if (eventType == "SingleClick") cursorControl.MoveDown();
+                        cursorControl.MoveDown();
                         break;
-                        
+
                     case "Left":
                     case "DpadLeft":
-                         if (eventType == "SingleClick")
-                         {
-                            if(wv.IsVideoFullscreen)
+                        
+                            if (wv.IsVideoFullscreen)
                                 cursorControl.VideoSeek(-5);
                             else
                                 cursorControl.MoveLeft();
-                         }
                         break;
 
                     case "Right":
                     case "DpadRight":
-                        if (eventType == "SingleClick")
-                        {
-                            if(wv.IsVideoFullscreen)
+                        
+                            if (wv.IsVideoFullscreen)
                                 cursorControl.VideoSeek(5);
                             else
                                 cursorControl.MoveRight();
-                        }
                         break;
 
-                    // Unhandled Keys
-                    default:
-                        if (eventType == "SingleClick")
-                        {
-                            e.Handled = false; 
-                            Debug.WriteLine($"Unhandled {eventType} for {e.KeyName}. Passing to system.");
-                        }
-                        break;
                 }
             });
         }
 
-        private void OnSingleClick(RemoteKeyEventArgs e)
-        {
-            HandleKeyEvent("SingleClick", e);
-        }
-
         private void OnDoubleClick(RemoteKeyEventArgs e)
         {
-            HandleKeyEvent("DoubleClick", e);
+
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                switch (e.KeyName)
+                {
+                    // OK / Enter Key
+                    case "Enter":
+                    case "DpadCenter":
+
+                        await cursorControl.DoubleClick();
+                        break;
+
+                    // Directional Keys (Up, Down, Left, Right)
+                    case "Up":
+                    case "DpadUp":
+                        cursorControl.SlideUp();
+                        break;
+
+                    case "Down":
+                    case "DpadDown":
+                        cursorControl.SlideDown();
+                        break;
+
+                    case "Left":
+                    case "DpadLeft":
+                        cursorControl.SlideLeft();
+                        break;
+
+                    case "Right":
+                    case "DpadRight":
+                        cursorControl.SlideRight();
+                        break;
+                }
+            });
         }
 
         // --- MODIFIED: OnLongClick now starts a repeating action ---
