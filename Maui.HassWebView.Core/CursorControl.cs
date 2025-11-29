@@ -6,12 +6,14 @@ namespace Maui.HassWebView.Core
     {
         readonly View _cursor;        // 光标
         readonly AbsoluteLayout _root; // 父布局
+        readonly HassWebView _wv;      // WebView
         public double Step { get; set; }
 
-        public CursorControl(View cursor, AbsoluteLayout root, double step = 20)
+        public CursorControl(View cursor, AbsoluteLayout root, HassWebView wv, double step = 20)
         {
             _cursor = cursor;
             _root = root;
+            _wv = wv;
             Step = step;
         }
 
@@ -58,6 +60,47 @@ namespace Maui.HassWebView.Core
 
             X = newX;
             Y = newY;
+        }
+
+        public void Click()
+        {
+            _wv.SimulateTouch((int)X, (int)Y);
+        }
+
+        // Page scroll up
+        public void SlideUp(double factor = 0.8, int duration = 300)
+        {
+            var x = (int)X;
+            var y = (int)Y;
+            var distance = (int)(_wv.Height * factor);
+            _wv.SimulateTouchSlide(x, y, x, y + distance, duration);
+        }
+
+        // Page scroll down
+        public void SlideDown(double factor = 0.8, int duration = 300)
+        {
+            var x = (int)X;
+            var y = (int)Y;
+            var distance = (int)(_wv.Height * factor);
+            _wv.SimulateTouchSlide(x, y, x, y - distance, duration);
+        }
+
+        // Page scroll left
+        public void SlideLeft(double factor = 0.8, int duration = 300)
+        {
+            var x = (int)X;
+            var y = (int)Y;
+            var distance = (int)(_wv.Width * factor);
+            _wv.SimulateTouchSlide(x, y, x + distance, y, duration);
+        }
+
+        // Page scroll right
+        public void SlideRight(double factor = 0.8, int duration = 300)
+        {
+            var x = (int)X;
+            var y = (int)Y;
+            var distance = (int)(_wv.Width * factor);
+            _wv.SimulateTouchSlide(x, y, x - distance, y, duration);
         }
     }
 }

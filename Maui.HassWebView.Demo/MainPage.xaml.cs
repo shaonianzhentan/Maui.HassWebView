@@ -19,7 +19,7 @@ namespace Maui.HassWebView.Demo
             wv.Navigated += Wv_Navigated;
 
             Loaded += MainPage_Loaded;
-            cursorControl = new CursorControl(cursor, root);
+            cursorControl = new CursorControl(cursor, root, wv);
         }
 
         private void Wv_Navigating(object sender, WebNavigatingEventArgs e)
@@ -89,7 +89,7 @@ namespace Maui.HassWebView.Demo
                     case "Enter":
                     case "DpadCenter":
                         Debug.WriteLine("Action: OK/Enter was pressed.");
-                        wv.SimulateTouch((int)cursorControl.X, (int)cursorControl.Y);
+                        cursorControl.Click();
                         break;
 
                     case "Escape":
@@ -145,7 +145,41 @@ namespace Maui.HassWebView.Demo
 
         private void OnDoubleClick(string keyName)
         {
-            HandleKeyEvent("Double Click", keyName);
+            Debug.WriteLine($"--- MainPage: DoubleClick Detected ---");
+            Debug.WriteLine($"Key Name: {keyName}");
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                switch (keyName)
+                {
+                    case "Up":
+                    case "DpadUp":
+                        Debug.WriteLine("Action: Up was pressed.");
+                        cursorControl.SlideUp();
+                        break;
+
+                    case "Down":
+                    case "DpadDown":
+                        Debug.WriteLine("Action: Down was pressed.");
+                        cursorControl.SlideDown();
+                        break;
+
+                    case "Left":
+                    case "DpadLeft":
+                        Debug.WriteLine("Action: Left was pressed.");
+                        cursorControl.SlideLeft();
+                        break;
+
+                    case "Right":
+                    case "DpadRight":
+                        Debug.WriteLine("Action: Right was pressed.");
+                        cursorControl.SlideRight();
+                        break;
+
+                    default:
+                        Debug.WriteLine($"Action: An unhandled key '{keyName}' was pressed.");
+                        break;
+                }
+            });
         }
 
         private void OnLongClick(string keyName)
