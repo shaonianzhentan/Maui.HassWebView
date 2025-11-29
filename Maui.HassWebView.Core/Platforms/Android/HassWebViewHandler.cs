@@ -85,6 +85,47 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
 
             motionEventDown.Recycle();
             motionEventUp.Recycle();
+        },
+        [nameof(HassWebView.SimulateTouchSlide)] = (handler, _, args) =>
+        {
+            if (args is not HassWebView.SimulateTouchSlideRequest request) return;
+            if (handler.PlatformView is not WebView platformView) return;
+
+            var density = platformView.Resources.DisplayMetrics.Density;
+            float x1 = (float)request.X1 * density;
+            float y1 = (float)request.Y1 * density;
+            float x2 = (float)request.X2 * density;
+            float y2 = (float)request.Y2 * density;
+            int duration = request.Duration;
+
+            var downTime = SystemClock.UptimeMillis();
+            var eventTime = SystemClock.UptimeMillis();
+
+            var motionEventDown = MotionEvent.Obtain(downTime, eventTime, MotionEventActions.Down, x1, y1, 0);
+            platformView.DispatchTouchEvent(motionEventDown);
+
+            int steps = 10;
+            float xStep = (x2 - x1) / steps;
+            float yStep = (y2 - y1) / steps;
+            long stepDuration = (long)duration / steps;
+
+            for (int i = 0; i < steps; i++)
+            {
+                eventTime += stepDuration;
+                float currentX = x1 + xStep * (i + 1);
+                float currentY = y1 + yStep * (i + 1);
+                var motionEventMove = MotionEvent.Obtain(downTime, eventTime, MotionEventActions.Move, currentX, currentY, 0);
+                platformView.DispatchTouchEvent(motionEventMove);
+                motionEventMove.Recycle();
+                SystemClock.Sleep(stepDuration);
+            }
+
+            eventTime += stepDuration;
+            var motionEventUp = MotionEvent.Obtain(downTime, eventTime, MotionEventActions.Up, x2, y2, 0);
+            platformView.DispatchTouchEvent(motionEventUp);
+
+            motionEventDown.Recycle();
+            motionEventUp.Recycle();
         }
     };
 

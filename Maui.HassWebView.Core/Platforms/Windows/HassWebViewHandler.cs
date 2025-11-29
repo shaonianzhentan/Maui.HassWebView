@@ -89,6 +89,41 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
 
             await wv.ExecuteScriptAsync(script);
 
+        },
+        [nameof(HassWebView.SimulateTouchSlide)] = async (handler, _, args) =>
+        {
+            if (args is not HassWebView.SimulateTouchSlideRequest request) return;
+            if (handler.PlatformView is not WebView wv) return;
+
+            var script = $@"
+(function(){{
+    var vw = {wv.ActualWidth};
+    var vh = {wv.ActualHeight};
+    var cw = document.documentElement.clientWidth;
+    var ch = document.documentElement.clientHeight;
+
+    var x1 = {request.X1} * (cw / vw);
+    var y1 = {request.Y1} * (ch / vh);
+    var x2 = {request.X2} * (cw / vw);
+    var y2 = {request.Y2} * (ch / vh);
+
+    var el = document.elementFromPoint(x1, y1);
+    if (el) {{
+        const down = new Touch({{ identifier: Date.now(), target: el, clientX: x1, clientY: y1, pageX: x1, pageY: y1, screenX: x1, screenY: y1 }});
+        const touchstart = new TouchEvent('touchstart', {{ bubbles: true, cancelable: true, composed: true, detail: 1, view: window, touches: [down], targetTouches: [down], changedTouches: [down] }});
+        el.dispatchEvent(touchstart);
+
+        const move = new Touch({{ identifier: Date.now(), target: el, clientX: x2, clientY: y2, pageX: x2, pageY: y2, screenX: x2, screenY: y2 }});
+        const touchmove = new TouchEvent('touchmove', {{ bubbles: true, cancelable: true, composed: true, detail: 1, view: window, touches: [move], targetTouches: [move], changedTouches: [move] }});
+        el.dispatchEvent(touchmove);
+
+        const up = new Touch({{ identifier: Date.now(), target: el, clientX: x2, clientY: y2, pageX: x2, pageY: y2, screenX: x2, screenY: y2 }});
+        const touchend = new TouchEvent('touchend', {{ bubbles: true, cancelable: true, composed: true, detail: 1, view: window, touches: [], targetTouches: [], changedTouches: [up] }});
+        el.dispatchEvent(touchend);
+    }}
+}})();";
+
+            await wv.ExecuteScriptAsync(script);
         }
 
     };
