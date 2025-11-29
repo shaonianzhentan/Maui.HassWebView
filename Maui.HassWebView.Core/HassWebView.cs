@@ -6,15 +6,24 @@ public class HassWebView : WebView
     {
     }
 
-    // 你可以加更多属性，例如注入 JSBridge
-    public static readonly BindableProperty EnableZoomProperty =
-        BindableProperty.Create(nameof(EnableZoom), typeof(bool), typeof(HassWebView), true);
+    public static readonly BindableProperty CanGoBackProperty =
+        BindableProperty.Create(nameof(CanGoBack), typeof(bool), typeof(HassWebView), false);
 
-    public bool EnableZoom
+    public bool CanGoBack
     {
-        get => (bool)GetValue(EnableZoomProperty);
-        set => SetValue(EnableZoomProperty, value);
+        get => (bool)GetValue(CanGoBackProperty);
+        internal set => SetValue(CanGoBackProperty, value);
     }
+
+    public static readonly BindableProperty CanGoForwardProperty =
+        BindableProperty.Create(nameof(CanGoForward), typeof(bool), typeof(HassWebView), false);
+
+    public bool CanGoForward
+    {
+        get => (bool)GetValue(CanGoForwardProperty);
+        internal set => SetValue(CanGoForwardProperty, value);
+    }
+
 
     public event EventHandler<WebNavigatingEventArgs> Navigating;
     public event EventHandler<WebNavigatedEventArgs> Navigated;

@@ -87,8 +87,8 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
         var state = args.IsSuccess ? WebNavigationResult.Success : WebNavigationResult.Failure;
         var mauiArgs = new WebNavigatedEventArgs(WebNavigationEvent.NewPage, VirtualView.Source, sender.Source, state);
         VirtualView.SendNavigated(mauiArgs);
-        VirtualView.SetValue(global::Microsoft.Maui.Controls.WebView.CanGoBackProperty, sender.CanGoBack);
-        VirtualView.SetValue(global::Microsoft.Maui.Controls.WebView.CanGoForwardProperty, sender.CanGoForward);
+        VirtualView.CanGoBack = sender.CanGoBack;
+        VirtualView.CanGoForward = sender.CanGoForward;
     }
 
     protected override void DisconnectHandler(WebView platformView)
