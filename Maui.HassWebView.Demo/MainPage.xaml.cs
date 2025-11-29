@@ -40,7 +40,7 @@ namespace Maui.HassWebView.Demo
 
         private void MainPage_Loaded(object? sender, EventArgs e)
         {
-            wv.Source = "https://www.bilibili.com/video/BV1U3o7YmEoz/";
+            wv.Source = "http://debugx5.qq.com/";
         }
 
         protected override void OnAppearing()
@@ -70,7 +70,7 @@ namespace Maui.HassWebView.Demo
         private void HandleKeyEvent(string eventType, string keyName)
         {
             // IMPORTANT: Ensure UI updates are on the main thread
-            MainThread.BeginInvokeOnMainThread(() =>
+            MainThread.BeginInvokeOnMainThread(async () =>
             {
                 Debug.WriteLine($"--- MainPage: {eventType} Detected ---");
                 Debug.WriteLine($"Key Name: {keyName}");
@@ -91,6 +91,11 @@ namespace Maui.HassWebView.Demo
                         }
                         else
                         {
+                            if (eventType == "DoubleClick")
+                            {
+                                await cursorControl.DoubleClick();
+                                break;
+                            }
                             cursorControl.Click();
                         }
                         break;
@@ -164,12 +169,12 @@ namespace Maui.HassWebView.Demo
 
         private void OnSingleClick(string keyName)
         {
-            HandleKeyEvent("Single Click", keyName);
+            HandleKeyEvent("SingleClick", keyName);
         }
 
         private void OnDoubleClick(string keyName)
         {
-            HandleKeyEvent("Double Click", keyName);
+            HandleKeyEvent("DoubleClick", keyName);
         }
 
         private void OnLongClick(string keyName)
