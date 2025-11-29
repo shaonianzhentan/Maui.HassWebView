@@ -17,10 +17,10 @@ namespace Maui.HassWebView.Core
 {
     public static class RemoteControlExtensions
     {
-        public static MauiAppBuilder UseRemoteControl(this MauiAppBuilder builder)
+        public static MauiAppBuilder UseRemoteControl(this MauiAppBuilder builder, int longPressTimeout = 750, int doubleClickTimeout = 300, int downInterval = 100)
         {
             // 1. Register KeyService as a singleton
-            builder.Services.AddSingleton<KeyService>();
+            builder.Services.AddSingleton(new KeyService(longPressTimeout, doubleClickTimeout, downInterval));
 
             builder.ConfigureLifecycleEvents(events =>
             {

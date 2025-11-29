@@ -1,4 +1,3 @@
-
 using Maui.HassWebView.Core;
 using System.Diagnostics;
 
@@ -51,6 +50,7 @@ namespace Maui.HassWebView.Demo
             _keyService.SingleClick += OnSingleClick;
             _keyService.DoubleClick += OnDoubleClick;
             _keyService.LongClick += OnLongClick;
+            _keyService.Down += OnDown;
         }
 
         protected override void OnDisappearing()
@@ -61,6 +61,7 @@ namespace Maui.HassWebView.Demo
             _keyService.SingleClick -= OnSingleClick;
             _keyService.DoubleClick -= OnDoubleClick;
             _keyService.LongClick -= OnLongClick;
+            _keyService.Down -= OnDown;
             
             // It's also good practice to unsubscribe from WebView events
             wv.Navigating -= Wv_Navigating;
@@ -116,13 +117,11 @@ namespace Maui.HassWebView.Demo
                     case "Up":
                     case "DpadUp":
                         Debug.WriteLine("Action: Up was pressed.");
-                        cursorControl.MoveUp();
                         break;
 
                     case "Down":
                     case "DpadDown":
                         Debug.WriteLine("Action: Down was pressed.");
-                        cursorControl.MoveDown();
                         break;
 
                     case "Left":
@@ -132,10 +131,6 @@ namespace Maui.HassWebView.Demo
                         {
                             cursorControl.VideoSeek(-5);
                         }
-                        else
-                        {
-                            cursorControl.MoveLeft();
-                        }
                         break;
 
                     case "Right":
@@ -144,10 +139,6 @@ namespace Maui.HassWebView.Demo
                         if (wv.IsVideoFullscreen)
                         {
                             cursorControl.VideoSeek(5);
-                        }
-                        else
-                        {
-                            cursorControl.MoveRight();
                         }
                         break;
                     
@@ -175,6 +166,41 @@ namespace Maui.HassWebView.Demo
         private void OnDoubleClick(string keyName)
         {
             HandleKeyEvent("DoubleClick", keyName);
+        }
+
+        private void OnDown(string keyName)
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                switch (keyName)
+                {
+                    case "Up":
+                    case "DpadUp":
+                        cursorControl.MoveUp();
+                        break;
+
+                    case "Down":
+                    case "DpadDown":
+                        cursorControl.MoveDown();
+                        break;
+
+                    case "Left":
+                    case "DpadLeft":
+                        if (!wv.IsVideoFullscreen)
+                        {
+                            cursorControl.MoveLeft();
+                        }
+                        break;
+
+                    case "Right":
+                    case "DpadRight":
+                        if (!wv.IsVideoFullscreen)
+                        {
+                            cursorControl.MoveRight();
+                        }
+                        break;
+                }
+            });
         }
 
         private void OnLongClick(string keyName)

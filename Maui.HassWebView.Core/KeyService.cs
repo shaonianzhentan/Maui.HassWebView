@@ -7,9 +7,11 @@ namespace Maui.HassWebView.Core
         public event Action<string> SingleClick;
         public event Action<string> DoubleClick;
         public event Action<string> LongClick;
+        public event Action<string> Down;
 
         private readonly System.Timers.Timer _longPressTimer;
         private readonly System.Timers.Timer _clickTimer;
+        private readonly System.Timers.Timer _downTimer;
 
         private readonly object _lock = new object();
 
@@ -17,7 +19,7 @@ namespace Maui.HassWebView.Core
         private bool _isLongPress = false;
         private int _pressCount = 0;
 
-        public KeyService(int longPressTimeout = 750, int doubleClickTimeout = 300)
+        public KeyService(int longPressTimeout = 750, int doubleClickTimeout = 300, int downInterval = 100)
         {
             _longPressTimer = new System.Timers.Timer(longPressTimeout);
             _longPressTimer.Elapsed += OnLongPressTimerElapsed;
@@ -26,6 +28,21 @@ namespace Maui.HassWebView.Core
             _clickTimer = new System.Timers.Timer(doubleClickTimeout);
             _clickTimer.Elapsed += OnClickTimerElapsed;
             _clickTimer.AutoReset = false;
+
+            _downTimer = new System.Timers.Timer(downInterval);
+            _downTimer.Elapsed += OnDownTimerElapsed;
+            _downTimer.AutoReset = true;
+        }
+
+        private void OnDownTimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            lock (_lock)
+            {
+                if (_pressCount > 0)
+                {
+                    Down?.Invoke(_currentKeyName);
+                }
+            }
         }
 
         internal void OnPressed(string keyName)
@@ -47,10 +64,12 @@ namespace Maui.HassWebView.Core
                 {
                     _isLongPress = false;
                     _longPressTimer.Start();
+                    _downTimer.Start();
                 }
                 else if (_pressCount == 2) // 第二次按下 (用于双击)
                 {
                     _longPressTimer.Stop();
+                    _downTimer.Stop();
                     DoubleClick?.Invoke(_currentKeyName);
                     _pressCount = 0;
                 }
@@ -62,6 +81,7 @@ namespace Maui.HassWebView.Core
             lock (_lock)
             {
                 _longPressTimer.Stop();
+                _downTimer.Stop();
 
                 // 如果已经触发了长按，则重置所有状态并立即返回
                 if (_isLongPress)
