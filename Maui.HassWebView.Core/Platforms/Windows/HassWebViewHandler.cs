@@ -1,4 +1,4 @@
-﻿using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Handlers;
 using Microsoft.Web.WebView2.Core;
 using System;
 
@@ -69,6 +69,14 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
         var core = sender.CoreWebView2;
         if (core != null)
         {
+            if (VirtualView?.JsBridges != null)
+            {
+                foreach (var bridge in VirtualView.JsBridges)
+                {
+                    core.AddHostObjectToScript(bridge.Key, bridge.Value);
+                }
+            }
+
             core.Settings.AreDefaultContextMenusEnabled = true;
             core.NavigationStarting += Core_NavigationStarting;
             core.NavigationCompleted += Core_NavigationCompleted;
@@ -98,6 +106,18 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
         {
             platformView.CoreWebView2.NavigationStarting -= Core_NavigationStarting;
             platformView.CoreWebView2.NavigationCompleted -= Core_NavigationCompleted;
+
+            if (VirtualView?.JsBridges != null)
+            {
+                foreach (var bridge in VirtualView.JsBridges)
+                {
+                    try
+                    {
+                        platformView.CoreWebView2.RemoveHostObjectFromScript(bridge.Key);
+                    }
+                    catch { /* ignore */ }
+                }
+            }
         }
         platformView.CoreWebView2Initialized -= CoreWebView2Initialized;
         base.DisconnectHandler(platformView);

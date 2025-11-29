@@ -2,6 +2,8 @@ using Android.OS;
 using Com.Tencent.Smtt.Export.External;
 using Com.Tencent.Smtt.Sdk;
 using Microsoft.Maui.Handlers;
+using System.Collections.Generic;
+using Java.Lang;
 
 namespace Maui.HassWebView.Core.Platforms.Android;
 
@@ -24,7 +26,7 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
         }
     };
 
-    public static CommandMapper commandMapper = new CommandMapper<HassWebView>()
+    public static CommandMapper commandMapper = new CommandMapper<HassWebView>
     {
         [nameof(HassWebView.GoBack)] = (handler, view, args) =>
         {
@@ -91,12 +93,29 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
         {
             Console.WriteLine("X5WebViewExtension对象为null，此为系统自带webview");
         }
+
         return webView;
     }
 
     protected override void ConnectHandler(WebView platformView)
     {
         base.ConnectHandler(platformView);
+
+        if (VirtualView?.JsBridges != null)
+        {
+            foreach (var bridge in VirtualView.JsBridges)
+            {
+                 if (bridge.Value is Java.Lang.Object javaObject)
+                {
+                    platformView.AddJavascriptInterface(javaObject, bridge.Key);
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[HassWebView] JS Bridge object for '{bridge.Key}' must inherit from Java.Lang.Object.");
+                }
+            }
+        }
+
         var url = (VirtualView.Source as UrlWebViewSource)?.Url;
         if (!string.IsNullOrEmpty(url))
             platformView.LoadUrl(url);
@@ -113,6 +132,14 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
 
         platformView.WebViewClient = null;
         platformView.WebChromeClient = null;
+
+        if (VirtualView?.JsBridges != null)
+        {
+            foreach (var bridge in VirtualView.JsBridges)
+            {
+                platformView.RemoveJavascriptInterface(bridge.Key);
+            }
+        }
 
         base.DisconnectHandler(platformView);
     }
