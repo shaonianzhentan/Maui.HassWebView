@@ -102,5 +102,24 @@ namespace Maui.HassWebView.Core
             var distance = (int)(_wv.Width * factor);
             _wv.SimulateTouchSlide(x, y, x - distance, y, duration);
         }
+
+
+        public void VideoSeek(int sencond)
+        {
+            _wv.EvaluateJavaScriptAsync($@"(function() {{
+                    var video = document.querySelector('video');
+                    if (video) video.currentTime += {sencond};
+                }})()");
+        }
+
+        public void VideoPlayPause()
+        {
+            _wv.EvaluateJavaScriptAsync($@"(function() {{
+                    const video = document.fullscreenElement?.querySelector('video') || 
+                                    (document.fullscreenElement?.tagName === 'VIDEO' ? document.fullscreenElement : null) || 
+                                    document.querySelector('video');
+                    if (video) video.paused ? video.play() : video.pause();
+                }})()");
+        }
     }
 }

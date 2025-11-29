@@ -85,7 +85,14 @@ namespace Maui.HassWebView.Demo
                     case "Enter":
                     case "DpadCenter":
                         Debug.WriteLine("Action: OK/Enter was pressed.");
-                        cursorControl.Click();
+                        if (wv.IsVideoFullscreen)
+                        {
+                            cursorControl.VideoPlayPause();
+                        }
+                        else
+                        {
+                            cursorControl.Click();
+                        }
                         break;
 
                     case "Escape":
@@ -116,13 +123,27 @@ namespace Maui.HassWebView.Demo
                     case "Left":
                     case "DpadLeft":
                         Debug.WriteLine("Action: Left was pressed.");
-                        cursorControl.MoveLeft();
+                        if (wv.IsVideoFullscreen)
+                        {
+                            cursorControl.VideoSeek(-5);
+                        }
+                        else
+                        {
+                            cursorControl.MoveLeft();
+                        }
                         break;
 
                     case "Right":
                     case "DpadRight":
                         Debug.WriteLine("Action: Right was pressed.");
-                        cursorControl.MoveRight();
+                        if (wv.IsVideoFullscreen)
+                        {
+                            cursorControl.VideoSeek(5);
+                        }
+                        else
+                        {
+                            cursorControl.MoveRight();
+                        }
                         break;
                     
                     // Now you can handle ANY key without changing the Core library
@@ -148,7 +169,12 @@ namespace Maui.HassWebView.Demo
 
         private void OnDoubleClick(string keyName)
         {
-            Debug.WriteLine($"--- MainPage: DoubleClick Detected ---");
+            HandleKeyEvent("Double Click", keyName);
+        }
+
+        private void OnLongClick(string keyName)
+        {
+            Debug.WriteLine($"--- MainPage: OnLongClick Detected ---");
             Debug.WriteLine($"Key Name: {keyName}");
             MainThread.BeginInvokeOnMainThread(() =>
             {
@@ -183,11 +209,6 @@ namespace Maui.HassWebView.Demo
                         break;
                 }
             });
-        }
-
-        private void OnLongClick(string keyName)
-        {
-            HandleKeyEvent("Long Click", keyName);
         }
     }
 }
