@@ -7,6 +7,7 @@ namespace Maui.HassWebView.Demo
     public partial class MainPage : ContentPage
     {
         private readonly KeyService _keyService;
+        CursorControl cursorControl;
 
         public MainPage(KeyService keyService)
         {
@@ -18,6 +19,7 @@ namespace Maui.HassWebView.Demo
             wv.Navigated += Wv_Navigated;
 
             Loaded += MainPage_Loaded;
+            cursorControl = new CursorControl(cursor, root);
         }
 
         private void Wv_Navigating(object sender, WebNavigatingEventArgs e)
@@ -38,6 +40,7 @@ namespace Maui.HassWebView.Demo
 
         private void MainPage_Loaded(object? sender, EventArgs e)
         {
+
             wv.Source = new UrlWebViewSource
             {
                 Url = "https://github.com/shaonianzhentan"
@@ -95,23 +98,25 @@ namespace Maui.HassWebView.Demo
                     case "Up":
                     case "DpadUp":
                         Debug.WriteLine("Action: Up was pressed.");
+                        cursorControl.MoveUp();
                         break;
 
                     case "Down":
                     case "DpadDown":
                         Debug.WriteLine("Action: Down was pressed.");
+                        cursorControl.MoveDown();
                         break;
 
                     case "Left":
                     case "DpadLeft":
                         Debug.WriteLine("Action: Left was pressed.");
-                        wv.Source = "https://www.baidu.com";
+                        cursorControl.MoveLeft();
                         break;
 
                     case "Right":
                     case "DpadRight":
                         Debug.WriteLine("Action: Right was pressed.");
-                        wv.Source = "https://google.com";
+                        cursorControl.MoveRight();
                         break;
                     
                     // Now you can handle ANY key without changing the Core library

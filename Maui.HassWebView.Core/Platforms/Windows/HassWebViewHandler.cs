@@ -59,7 +59,7 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
         [nameof(HassWebView.SimulateTouch)] = async (handler, _, args) =>
         {
             if (args is not HassWebView.SimulateTouchRequest request) return;
-            if (handler.PlatformView?.CoreWebView2 is null) return;
+            if (handler.PlatformView is not WebView wv) return;
 
             var script = $@"
                 var el = document.elementFromPoint({request.X}, {request.Y});
@@ -73,8 +73,8 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
                     const clickEvent = new MouseEvent('click', {{ 'bubbles': true, 'cancelable': true, 'view': window }});
                     el.dispatchEvent(clickEvent);
                 }}";
-            
-            await handler.PlatformView.CoreWebView2.ExecuteScriptAsync(script);
+
+            await wv.ExecuteScriptAsync(script);
         }
     };
 
@@ -92,7 +92,7 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
     protected override async void ConnectHandler(WebView platformView)
     {
         base.ConnectHandler(platformView);
-        await platformView.EnsureCoreWebView2Async();
+        //await platformView.EnsureCoreWebView2Async();
 
         var url = (VirtualView.Source as UrlWebViewSource)?.Url;
         if (!string.IsNullOrEmpty(url))
