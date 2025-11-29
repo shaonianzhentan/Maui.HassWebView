@@ -68,7 +68,7 @@ namespace Maui.HassWebView.Core
         }
 
         // Page scroll up
-        public void SlideUp(double factor = 0.8, int duration = 300)
+        public void SlideUp(double factor = 0.4, int duration = 300)
         {
             var x = (int)X;
             var y = (int)Y;
@@ -77,7 +77,7 @@ namespace Maui.HassWebView.Core
         }
 
         // Page scroll down
-        public void SlideDown(double factor = 0.8, int duration = 300)
+        public void SlideDown(double factor = 0.4, int duration = 300)
         {
             var x = (int)X;
             var y = (int)Y;
@@ -86,7 +86,7 @@ namespace Maui.HassWebView.Core
         }
 
         // Page scroll left
-        public void SlideLeft(double factor = 0.8, int duration = 300)
+        public void SlideLeft(double factor = 0.4, int duration = 300)
         {
             var x = (int)X;
             var y = (int)Y;
@@ -95,7 +95,7 @@ namespace Maui.HassWebView.Core
         }
 
         // Page scroll right
-        public void SlideRight(double factor = 0.8, int duration = 300)
+        public void SlideRight(double factor = 0.4, int duration = 300)
         {
             var x = (int)X;
             var y = (int)Y;

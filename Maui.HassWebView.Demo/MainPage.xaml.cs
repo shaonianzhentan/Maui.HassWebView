@@ -40,11 +40,7 @@ namespace Maui.HassWebView.Demo
 
         private void MainPage_Loaded(object? sender, EventArgs e)
         {
-
-            wv.Source = new UrlWebViewSource
-            {
-                Url = "https://github.com/shaonianzhentan"
-            };
+            wv.Source = "https://www.bilibili.com/video/BV1U3o7YmEoz/";
         }
 
         protected override void OnAppearing()
@@ -84,7 +80,7 @@ namespace Maui.HassWebView.Demo
                 {
                     // You can handle multiple key names in one case for mapping
                     case "A":
-                        wv.Source = "https://www.baidu.com";
+                        wv.Source = "https://www.bilibili.com/video/BV1U3o7YmEoz/";
                         break;
                     case "Enter":
                     case "DpadCenter":

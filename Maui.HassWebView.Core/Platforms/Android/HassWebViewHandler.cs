@@ -49,7 +49,7 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
         {
             if (handler.PlatformView is WebView wv)
             {
-                handler.PlatformView.WebChromeClient.OnHideCustomView();
+                wv.WebChromeClient.OnHideCustomView();
             }
         },
         [nameof(HassWebView.EvaluateJavaScriptAsync)] = (handler, _, args) =>
