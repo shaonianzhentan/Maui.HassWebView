@@ -1,10 +1,12 @@
 using Android.OS;
-using Com.Tencent.Smtt.Export.External;
 using Com.Tencent.Smtt.Sdk;
 using Microsoft.Maui.Handlers;
 using System.Collections.Generic;
 using Java.Lang;
 using Maui.HassWebView.Core.Platforms.Android.TencentX5;
+using System.Threading.Tasks;
+using Android.Views;
+using System;
 
 namespace Maui.HassWebView.Core.Platforms.Android;
 
@@ -53,6 +55,23 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
                     request.TaskCompletionSource.SetResult(result);
                 }));
             }
+        },
+        [nameof(HassWebView.SimulateTouch)] = (handler, _, args) =>
+        {
+            if (args is not HassWebView.SimulateTouchRequest request) return;
+            if (handler.PlatformView is not WebView platformView) return;
+
+            var downTime = SystemClock.UptimeMillis();
+            var eventTime = SystemClock.UptimeMillis();
+
+            var motionEventDown = MotionEvent.Obtain(downTime, eventTime, MotionEventActions.Down, request.X, request.Y, 0);
+            platformView.DispatchTouchEvent(motionEventDown);
+
+            var motionEventUp = MotionEvent.Obtain(downTime, eventTime, MotionEventActions.Up, request.X, request.Y, 0);
+            platformView.DispatchTouchEvent(motionEventUp);
+
+            motionEventDown.Recycle();
+            motionEventUp.Recycle();
         }
     };
 
@@ -64,7 +83,7 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
     {
         var webView = new WebView(MauiApplication.Current.ApplicationContext);
         webView.Settings.JavaScriptEnabled = true;
-         webView.Settings.JavaScriptCanOpenWindowsAutomatically = false;
+        webView.Settings.JavaScriptCanOpenWindowsAutomatically = false;
         webView.Settings.MixedContentMode = 1; // 总是允许加载图片
         webView.Settings.JavaScriptEnabled = true;
         webView.Settings.DomStorageEnabled = true;
@@ -89,16 +108,14 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
         webView.WebChromeClient = new WebChromeClientHandler();
         webView.WebViewClient = new WebViewClientHandler(VirtualView);
 
-        //x5object变量非null表示启用x5内核成功
         var x5object = webView.X5WebViewExtension;
-
         if (x5object != null)
         {
             Console.WriteLine("X5WebViewExtension对象不为null，此为x5webview");
             Bundle data = new Bundle();
-            data.PutBoolean("standardFullScreen", false); // true表示标准全屏，false表示X5全屏；不设置默认false，
-            data.PutBoolean("supportLiteWnd", false); // false：关闭小窗；true：开启小窗；不设置默认true，
-            data.PutInt("DefaultVideoScreen", 2); // 1：以页面内开始播放，2：以全屏开始播放；不设置默认：1
+            data.PutBoolean("standardFullScreen", false);
+            data.PutBoolean("supportLiteWnd", false);
+            data.PutInt("DefaultVideoScreen", 2);
             x5object.InvokeMiscMethod("setVideoParams", data);
         }
         else
@@ -117,7 +134,7 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
         {
             foreach (var bridge in VirtualView.JsBridges)
             {
-                 if (bridge.Value is Java.Lang.Object javaObject)
+                if (bridge.Value is Java.Lang.Object javaObject)
                 {
                     platformView.AddJavascriptInterface(javaObject, bridge.Key);
                 }
@@ -135,7 +152,6 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
 
     protected override void DisconnectHandler(WebView platformView)
     {
-        // 停止加载、清理监听器，释放资源
         try
         {
             platformView.StopLoading();

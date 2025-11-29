@@ -73,6 +73,16 @@ public class HassWebView : WebView
         Handler.Invoke(nameof(EvaluateJavaScriptAsync), new EvaluateJavaScriptAsyncRequest(tcs, script));
         return tcs.Task;
     }
+    
+    public void SimulateTouch(int x, int y)
+    {
+        if (Handler == null)
+        {
+            return;
+        }
+
+        Handler.Invoke(nameof(SimulateTouch), new SimulateTouchRequest(x, y));
+    }
 
     internal class EvaluateJavaScriptAsyncRequest
     {
@@ -84,5 +94,17 @@ public class HassWebView : WebView
 
         public TaskCompletionSource<string> TaskCompletionSource { get; }
         public string Script { get; }
+    }
+
+    internal class SimulateTouchRequest
+    {
+        public SimulateTouchRequest(int x, int y)
+        {
+            X = x;
+            Y = y;
+        }
+
+        public int X { get; }
+        public int Y { get; }
     }
 }

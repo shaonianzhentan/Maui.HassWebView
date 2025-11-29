@@ -55,6 +55,26 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
             {
                 request.TaskCompletionSource.SetException(ex);
             }
+        },
+        [nameof(HassWebView.SimulateTouch)] = async (handler, _, args) =>
+        {
+            if (args is not HassWebView.SimulateTouchRequest request) return;
+            if (handler.PlatformView?.CoreWebView2 is null) return;
+
+            var script = $@"
+                var el = document.elementFromPoint({request.X}, {request.Y});
+                if (el) {{
+                    const touchStartEvent = new Event('touchstart', {{ 'bubbles': true, 'cancelable': true }});
+                    el.dispatchEvent(touchStartEvent);
+                    
+                    const touchEndEvent = new Event('touchend', {{ 'bubbles': true, 'cancelable': true }});
+                    el.dispatchEvent(touchEndEvent);
+
+                    const clickEvent = new MouseEvent('click', {{ 'bubbles': true, 'cancelable': true, 'view': window }});
+                    el.dispatchEvent(clickEvent);
+                }}";
+            
+            await handler.PlatformView.CoreWebView2.ExecuteScriptAsync(script);
         }
     };
 
