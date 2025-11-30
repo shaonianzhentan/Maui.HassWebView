@@ -23,6 +23,9 @@
 		<RepositoryUrl>https://github.com/shaonianzhentan/HassWebView.git</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>webview, homeassistant, hass, remote-control, android, windows</PackageTags>
+		<PackageReleaseNotes>
+			Support windows and android
+		</PackageReleaseNotes>
 		<PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
 	</PropertyGroup>
 
