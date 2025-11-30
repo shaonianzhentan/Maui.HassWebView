@@ -90,12 +90,12 @@ namespace Maui.HassWebView.Demo
                     // Directional Keys (Up, Down, Left, Right)
                     case "Up":
                     case "DpadUp":
-                        cursorControl.MoveUp();
+                        cursorControl.MoveUpBy();
                         break;
 
                     case "Down":
                     case "DpadDown":
-                        cursorControl.MoveDown();
+                        cursorControl.MoveDownBy();
                         break;
 
                     case "Left":
@@ -104,7 +104,7 @@ namespace Maui.HassWebView.Demo
                             if (wv.IsVideoFullscreen)
                                 cursorControl.VideoSeek(-5);
                             else
-                                cursorControl.MoveLeft();
+                                cursorControl.MoveLeftBy();
                         break;
 
                     case "Right":
@@ -113,7 +113,7 @@ namespace Maui.HassWebView.Demo
                             if (wv.IsVideoFullscreen)
                                 cursorControl.VideoSeek(5);
                             else
-                                cursorControl.MoveRight();
+                                cursorControl.MoveRightBy();
                         break;
 
                 }
@@ -176,18 +176,18 @@ namespace Maui.HassWebView.Demo
             {
                 case "Up":
                 case "DpadUp":
-                    _keyService.StartRepeatingAction(() => cursorControl.MoveUp(), repeatInterval);
+                    _keyService.StartRepeatingAction(() => cursorControl.MoveUpBy(), repeatInterval);
                     break;
                 case "Down":
                 case "DpadDown":
-                    _keyService.StartRepeatingAction(() => cursorControl.MoveDown(), repeatInterval);
+                    _keyService.StartRepeatingAction(() => cursorControl.MoveDownBy(), repeatInterval);
                     break;
                 case "Left":
                 case "DpadLeft":
                     if (wv.IsVideoFullscreen) {
                         cursorControl.VideoSeek(-15);
                     } else {
-                        _keyService.StartRepeatingAction(() => cursorControl.MoveLeft(), repeatInterval);
+                        _keyService.StartRepeatingAction(() => cursorControl.MoveLeftBy(), repeatInterval);
                     }
                     break;
                 case "Right":
@@ -195,7 +195,7 @@ namespace Maui.HassWebView.Demo
                      if (wv.IsVideoFullscreen) {
                         cursorControl.VideoSeek(15);
                     } else {
-                        _keyService.StartRepeatingAction(() => cursorControl.MoveRight(), repeatInterval);
+                        _keyService.StartRepeatingAction(() => cursorControl.MoveRightBy(), repeatInterval);
                     }
                     break;
             }

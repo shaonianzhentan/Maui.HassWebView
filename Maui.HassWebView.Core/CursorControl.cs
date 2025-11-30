@@ -47,6 +47,37 @@ namespace Maui.HassWebView.Core
         public void MoveLeft() => MoveBy(-Step, 0);
         public void MoveRight() => MoveBy(Step, 0);
 
+        public void MoveUpBy(int y=60){
+            MoveUp();
+            if (Y < _cursor.Height)
+            {
+                _wv.EvaluateJavaScriptAsync($"window.scrollBy(0, -{y})");
+            }
+        }
+        public void MoveDownBy(int y = 60)
+        {
+            MoveDown();
+            if (Y > _root.Height - (_cursor.Height + 5))
+            {
+                _wv.EvaluateJavaScriptAsync($"window.scrollBy(0, {y})");
+            }
+        }
+        public void MoveLeftBy(int x = 60){
+            MoveLeft();
+            if (X < _cursor.Width)
+            {
+                _wv.EvaluateJavaScriptAsync($"window.scrollBy(-{x}, 0)");
+            }
+        }
+        public void MoveRightBy(int x = 60)
+        {
+            MoveRight();
+            if (X > _root.Width - (_cursor.Width + 5))
+            {
+                _wv.EvaluateJavaScriptAsync($"window.scrollBy({x}, 0)");
+            }
+        }
+
         public void MoveBy(double dx, double dy)
         {
             if (_root.Width <= 0 || _root.Height <= 0)
@@ -141,32 +172,6 @@ namespace Maui.HassWebView.Core
 
         public async Task VideoPlayPause()
         {
-            var result =  await _wv.EvaluateJavaScriptAsync($@"(()=>{{
-                    function findFirstVideo(doc) {{
-                        let videos = Array.from(doc.getElementsByTagName('video'))
-                            .filter(v => v.src && v.src.trim() !== '');
-                        if (videos.length > 0) return videos[0];
-
-                        let iframes = doc.getElementsByTagName('iframe');
-                        for (let i = 0; i < iframes.length; i++) {{
-                            try {{
-                                let idoc = iframes[i].contentDocument || iframes[i].contentWindow.document;
-                                if (idoc) {{
-                                    let v = findFirstVideo(idoc);
-                                    if (v) return v;
-                                }}
-                            }} catch (e) {{
-
-                            }}
-                        }}
-                        return null;
-                    }}
-                    var video = findFirstVideo(document);
-                    if (video) video.paused ? video.play() : video.pause();
-                    return video ? 1 : 0
-                }})()");
-            if (result == "0")
-            {
 #if ANDROID
                 if(_wv.Handler.PlatformView is Com.Tencent.Smtt.Sdk.WebView wv)
                 {
@@ -189,7 +194,6 @@ namespace Maui.HassWebView.Core
                     }
                 }
 #endif
-            }
         }
     }
 }
