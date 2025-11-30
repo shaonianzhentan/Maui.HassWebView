@@ -126,7 +126,7 @@ public static class MauiAppBuilderExtensions
     public static MauiAppBuilder UseRemoteControl(
         this MauiAppBuilder builder,
         int longPressTimeout = 750,
-        int doubleClickTimeout = 100)
+        int doubleClickTimeout = 150)
     {
         builder.Services.AddSingleton(new KeyService(longPressTimeout, doubleClickTimeout));
 
