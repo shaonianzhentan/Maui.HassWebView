@@ -20,15 +20,6 @@ public class HassWebView : WebView
         set => SetValue(JsBridgesProperty, value);
     }
 
-    public static readonly BindableProperty EnableZoomProperty =
-        BindableProperty.Create(nameof(EnableZoom), typeof(bool), typeof(HassWebView), true);
-
-    public bool EnableZoom
-    {
-        get => (bool)GetValue(EnableZoomProperty);
-        set => SetValue(EnableZoomProperty, value);
-    }
-
     public static readonly BindableProperty CanGoBackProperty =
         BindableProperty.Create(nameof(CanGoBack), typeof(bool), typeof(HassWebView), false);
 

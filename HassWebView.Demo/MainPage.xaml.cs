@@ -1,5 +1,6 @@
 using HassWebView.Core;
 using System.Diagnostics;
+using System;
 
 namespace HassWebView.Demo
 {
@@ -22,6 +23,22 @@ namespace HassWebView.Demo
         private void Wv_Navigating(object sender, WebNavigatingEventArgs e)
         {
             Debug.WriteLine($">>> WebView Navigating: {e.Url}");
+            try
+            {
+                var host = new Uri(e.Url).Host;
+                if (host.EndsWith("youtube.com"))
+                {
+                    wv.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+                }
+                else if (host.EndsWith("bilibili.com"))
+                {
+                    wv.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36";
+                }
+            }
+            catch (Exception)
+            {
+                // Invalid URL
+            }
         }
 
         private void Wv_Navigated(object sender, WebNavigatedEventArgs e)
@@ -147,8 +164,7 @@ namespace HassWebView.Demo
 
                     case "Left":
                     case "DpadLeft":
-                        cursorControl.SlideLeft();
-                        break;
+                        cursorControl.SlideLeft();                        break;
 
                     case "Right":
                     case "DpadRight":

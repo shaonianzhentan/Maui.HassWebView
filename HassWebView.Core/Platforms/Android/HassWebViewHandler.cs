@@ -26,6 +26,13 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
                     wv.LoadUrl(url);
                 }
             }
+        },
+        [nameof(HassWebView.UserAgent)] = (handler, view) =>
+        {
+            if (handler.PlatformView is WebView wv)
+            {
+                webView.Settings.UserAgentString = view.UserAgent;
+            }
         }
     };
 
