@@ -12,6 +12,14 @@ namespace HassWebView.Core.Platforms.Android.TencentX5;
 
 using WebView = Com.Tencent.Smtt.Sdk.WebView;
 
+
+public class VideoItem
+{
+    public string id { get; set;  }
+    public string src { get; set; }
+    public string type { get; set; }
+}
+
 public class WidgetClientFactory : Java.Lang.Object, IEmbeddedWidgetClientFactory
 {
     private readonly DisplayMetrics _metrics;
@@ -40,12 +48,12 @@ public class WidgetClientFactory : Java.Lang.Object, IEmbeddedWidgetClientFactor
             if (attrs.ContainsKey("x5-source") && !string.IsNullOrEmpty(attrs["x5-source"]))
             {
                 var x5source = attrs["x5-source"];
-                dynamic dynamicList = JsonSerializer.Deserialize<dynamic>(x5source);
+                var dynamicList = JsonSerializer.Deserialize<VideoItem[]>(x5source);
                 foreach (var item in dynamicList)
                 {
                     if (!string.IsNullOrEmpty(item.src))
                     {
-                        return new VideoWidget(tag, attrs["src"], widget);
+                        return new VideoWidget(tag, item.src, widget);
                     }
                 }
             }
