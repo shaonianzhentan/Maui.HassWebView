@@ -2,6 +2,7 @@
 using HassWebView.Core;
 using System.Diagnostics;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using HassWebView.Core.Events;
 
@@ -64,6 +65,21 @@ namespace HassWebView.Demo
 
         private async Task StartHttpServer()
         {
+            _httpServer.Get("/", async (HttpServer.Request req, HttpServer.Response res) =>
+            {
+                try
+                {
+                    using var stream = await FileSystem.OpenAppPackageFileAsync("index.html");
+                    using var reader = new StreamReader(stream);
+                    var htmlContent = await reader.ReadToEndAsync();
+                    await res.Html(htmlContent);
+                }
+                catch (Exception ex)
+                {
+                    await res.Text($"Could not load page. Error: {ex.Message}", System.Net.HttpStatusCode.InternalServerError);
+                }
+            });
+
             _httpServer.Get("/api/info", async (HttpServer.Request req, HttpServer.Response res) =>
             {
                 var name = req.Query["name"] ?? "World";

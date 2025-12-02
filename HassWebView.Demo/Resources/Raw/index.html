@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HassWebView Demo</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 40px; background-color: #f0f2f5; color: #333; }
+        h1 { color: #0078d4; }
+        ul { list-style-type: none; padding: 0; }
+        li { background-color: #fff; margin: 10px 0; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        code { background-color: #e1e1e1; padding: 3px 5px; border-radius: 4px; }
+        a { color: #0078d4; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>Welcome to HassWebView's Internal Web Server!</h1>
+    <p>This page is being served directly from the .NET MAUI application.</p>
+    <p>You can use this to create custom UI, remote control interfaces, or expose APIs to your web view content.</p>
+    <h3>Available API Endpoints:</h3>
+    <ul>
+        <li><code>GET /api/info</code>: Returns system information. Try <a href="/api/info?name=Developer">/api/info?name=Developer</a>.</li>
+        <li><code>POST /api/echo</code>: Echoes back the JSON message you send.</li>
+        <li><code>PUT /api/data</code>: Accepts raw data via PUT request.</li>
+    </ul>
+</body>
+</html>

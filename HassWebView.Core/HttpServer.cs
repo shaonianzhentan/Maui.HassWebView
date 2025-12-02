@@ -14,6 +14,8 @@ namespace HassWebView.Core
 {
     public class HttpServer : IDisposable
     {
+        private readonly HttpListener _listener = new HttpListener();
+
         public class Request
         {
             private readonly HttpListenerRequest _req;
@@ -71,6 +73,15 @@ namespace HassWebView.Core
                 _res.ContentType = "text/plain";
                 _res.StatusCode = (int)statusCode;
                 var buffer = Encoding.UTF8.GetBytes(text);
+                _res.ContentLength64 = buffer.Length;
+                await _res.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+            }
+
+            public async Task Html(string html, HttpStatusCode statusCode = HttpStatusCode.OK)
+            {
+                _res.ContentType = "text/html";
+                _res.StatusCode = (int)statusCode;
+                var buffer = Encoding.UTF8.GetBytes(html);
                 _res.ContentLength64 = buffer.Length;
                 await _res.OutputStream.WriteAsync(buffer, 0, buffer.Length);
             }
