@@ -48,4 +48,11 @@ public class WebViewClientHandler : WebViewClient
         base.OnPageFinished(view, url);
         _webView.SendNavigated(new WebNavigatedEventArgs(WebNavigationEvent.NewPage, new UrlWebViewSource { Url = url }, url, WebNavigationResult.Success));
     }
+
+    public override void DoUpdateVisitedHistory(WebView view, string url, bool isReload)
+    {
+        base.DoUpdateVisitedHistory(view, url, isReload);
+        _webView.CanGoBack = view.CanGoBack();
+        _webView.CanGoForward = view.CanGoForward();
+    }
 }
