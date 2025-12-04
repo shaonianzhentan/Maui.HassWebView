@@ -10,7 +10,10 @@ public class HassWebView : WebView
 {
     public HassWebView()
     {
-        JsBridges = new Dictionary<string, object>();
+        JsBridges = new Dictionary<string, object>
+        {
+            { HassJsBridge.BridgeName, new HassJsBridge() }
+        };
     }
 
     public static readonly BindableProperty JsBridgesProperty =
