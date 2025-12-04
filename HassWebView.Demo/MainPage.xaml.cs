@@ -36,6 +36,25 @@ namespace HassWebView.Demo
         private void Wv_ResourceLoading(object? sender, ResourceLoadingEventArgs e)
         {
             Debug.WriteLine($"ResourceLoading: {e.Url}");
+            var urlString = e.Url.ToString();
+
+            // Corrected logic: check for http(s) and contains .mp4 or .m3u8
+            if (urlString.StartsWith("http", StringComparison.OrdinalIgnoreCase) &&
+                (urlString.Contains(".mp4", StringComparison.OrdinalIgnoreCase) || 
+                 urlString.Contains(".m3u8", StringComparison.OrdinalIgnoreCase)))
+            {
+                Debug.WriteLine($"Video resource detected: {urlString}. Preparing to inject script and allowing request to continue.");
+                
+                // The request is NOT cancelled, as requested.
+
+                // I am ready to add the JavaScript execution here. Please provide the script.
+                // For example:
+                // MainThread.BeginInvokeOnMainThread(() =>
+                // {
+                //     var script = $"console.log('Video detected: {urlString}');";
+                //     wv.EvaluateJavaScriptAsync(script);
+                // });
+            }
         }
 
         private void Wv_Navigating(object sender, WebNavigatingEventArgs e)
