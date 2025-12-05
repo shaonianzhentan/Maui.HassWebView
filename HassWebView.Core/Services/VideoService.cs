@@ -10,11 +10,8 @@ namespace HassWebView.Core.Services
 (function() {{
     function addVideoToPanel(videoUrl) {{
         const safeId = 'video-panel-item-' + encodeURIComponent(videoUrl).replace(/[^a-zA-Z0-9_-]/g, '_');
-        if (document.getElementById(safeId)) {{
-            return; // Item already in panel
-        }}
-
         let container = document.getElementById('video-panel-container');
+
         if (!container) {{
             container = document.createElement('div');
             container.id = 'video-panel-container';
@@ -27,24 +24,32 @@ namespace HassWebView.Core.Services
             document.body.appendChild(container);
         }}
 
-        const item = document.createElement('div');
-        item.id = safeId;
-        item.textContent = videoUrl;
-        Object.assign(item.style, {{
-            padding: '8px', backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            color: '#ffffff', border: '1px solid #555', borderRadius: '5px',
-            wordBreak: 'break-all', cursor: 'pointer'
-        }});
+        let item = document.getElementById(safeId);
 
-        item.addEventListener('click', () => {{
-            if (window.HassJsBridge && window.HassJsBridge.OpenVideoPlayer) {{
-                window.HassJsBridge.OpenVideoPlayer(videoUrl);
-            }} else {{
-                console.error('HassJsBridge.OpenVideoPlayer not found.');
-            }}
-        }});
+        if (!item) {{
+            item = document.createElement('div');
+            item.id = safeId;
+            item.textContent = videoUrl;
+            Object.assign(item.style, {{
+                padding: '8px', backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                color: '#ffffff', border: '1px solid #555', borderRadius: '5px',
+                wordBreak: 'break-all', cursor: 'pointer'
+            }});
 
-        container.appendChild(item);
+            item.addEventListener('click', () => {{
+                if (window.HassJsBridge && window.HassJsBridge.OpenVideoPlayer) {{
+                    window.HassJsBridge.OpenVideoPlayer(videoUrl);
+                }} else {{
+                    console.error('HassJsBridge.OpenVideoPlayer not found.');
+                }}
+            }});
+        }}
+
+        container.insertBefore(item, container.firstChild);
+
+        while (container.children.length > 10) {{
+            container.removeChild(container.lastChild);
+        }}
     }}
     
     addVideoToPanel('{url}');
