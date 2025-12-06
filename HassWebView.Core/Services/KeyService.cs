@@ -6,13 +6,7 @@ namespace HassWebView.Core.Services;
 
 public class KeyService
 {
-    // --- NEW: A synchronous event fired immediately on key press ---
-    public event Action<RemoteKeyEventArgs> KeyDown;
-
-    public event Action<RemoteKeyEventArgs> SingleClick;
-    public event Action<RemoteKeyEventArgs> DoubleClick;
-    public event Action<RemoteKeyEventArgs> LongClick;
-    public event Action<RemoteKeyEventArgs> KeyUp; 
+    private IKeyHandler _currentHandler;
 
     private readonly int _longPressTimeout;
     private readonly int _doubleClickTimeout;
@@ -31,8 +25,21 @@ public class KeyService
         _doubleClickTimeout = doubleClickTimeout;
     }
 
+    public void Register(IKeyHandler handler)
+    {
+        _currentHandler = handler;
+    }
+
+    public void Unregister()
+    {
+        _currentHandler = null;
+        ResetDoubleClickState();
+        StopRepeatingAction();
+    }
+
     public void StartRepeatingAction(Action action, int interval = 100)
     {
+        if (_currentHandler == null) return;
         StopRepeatingAction();
         _repeatingAction = action;
         _repeatingActionTimer = new Timer(RepeatingActionCallback, null, 0, interval);
@@ -42,8 +49,8 @@ public class KeyService
     {
         MainThread.BeginInvokeOnMainThread(() => _repeatingAction?.Invoke());
     }
-    
-    private void StopRepeatingAction()
+
+    public void StopRepeatingAction()
     {
         _repeatingActionTimer?.Change(Timeout.Infinite, Timeout.Infinite);
         _repeatingActionTimer?.Dispose();
@@ -51,32 +58,28 @@ public class KeyService
         _repeatingAction = null;
     }
 
-    // --- MODIFIED: OnPressed now returns a boolean and fires the KeyDown event first ---
     public bool OnPressed(string keyName)
     {
-        // 1. Create args and immediately fire the synchronous KeyDown event.
-        var args = new RemoteKeyEventArgs(keyName);
-        KeyDown?.Invoke(args);
+        if (_currentHandler == null) return false;
 
-        // 2. Check if the user has decided to let the system handle it.
-        if (!args.Handled)
+        var args = new RemoteKeyEventArgs(keyName);
+        bool handled = _currentHandler.OnKeyDown(this, args);
+
+        if (!handled)
         {
-            // If Handled is false, we stop all further processing in this service...
-            ResetDoubleClickState(); 
-            // ...and tell the platform layer (e.g., RemoteControlExtensions) not to intercept the event.
-            return false; 
+            ResetDoubleClickState();
+            return false;
         }
 
-        // 3. If Handled is true (default), proceed with gesture detection.
         if (_longPressHasFired) return true;
 
         if (_lastKey != keyName)
         {
-            StopRepeatingAction(); 
+            StopRepeatingAction();
             ResetDoubleClickState();
             _pressCount = 0;
         }
-        
+
         _lastKey = keyName;
         _pressCount++;
 
@@ -86,25 +89,29 @@ public class KeyService
         {
             _longPressTimer = new Timer(LongPressTimerCallback, keyName, _longPressTimeout, Timeout.Infinite);
         }
-        
-        // Tell the platform layer to intercept the event because we are handling it.
+
         return true;
     }
 
-    public void OnReleased()
+    public bool OnReleased()
     {
-        StopRepeatingAction();
+        if (_currentHandler == null) return false;
 
+        if (_lastKey == null && !_longPressHasFired)
+        {
+            return false;
+        }
+        
         if (_lastKey != null)
         {
-            KeyUp?.Invoke(new RemoteKeyEventArgs(_lastKey));
+            _currentHandler.OnKeyUp(this, new RemoteKeyEventArgs(_lastKey));
         }
 
         if (_longPressHasFired)
-        { 
+        {
             _longPressHasFired = false;
             ResetDoubleClickState();
-            return;
+            return true;
         }
 
         _longPressTimer?.Change(Timeout.Infinite, Timeout.Infinite);
@@ -115,25 +122,23 @@ public class KeyService
         }
         else if (_pressCount >= 2)
         {
-            Debug.WriteLine("DoubleClick detected");
-            DoubleClick?.Invoke(new RemoteKeyEventArgs(_lastKey));
+            _currentHandler.OnDoubleClick(this, new RemoteKeyEventArgs(_lastKey));
             ResetDoubleClickState();
         }
+
+        return true;
     }
 
     private void LongPressTimerCallback(object state)
-    { 
-        Debug.WriteLine("LongClick detected");
+    {
         if (_longPressHasFired) return;
         _longPressHasFired = true;
-        LongClick?.Invoke(new RemoteKeyEventArgs((string)state));
-        // We don't ResetDoubleClickState here anymore to allow KeyUp to know about the state.
+        _currentHandler?.OnLongClick(this, new RemoteKeyEventArgs((string)state));
     }
 
     private void DoubleClickTimerCallback(object state)
     {
-        Debug.WriteLine("SingleClick detected");
-        SingleClick?.Invoke(new RemoteKeyEventArgs((string)state));
+        _currentHandler?.OnSingleClick(this, new RemoteKeyEventArgs((string)state));
         ResetDoubleClickState();
     }
 

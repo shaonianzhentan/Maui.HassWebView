@@ -194,8 +194,8 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
             editor.PutInt("MTT_CORE_EMBEDDED_WIDGET_ENABLE", 1);
             editor.Apply(); // 异步提交（或用 Commit() 同步提交）
 
-            //string[] tags = { "video" };
-            //webView.X5WebViewExtension.RegisterEmbeddedWidget(tags, new WidgetClientFactory(webView));
+            string[] tags = { "hass-video" };
+            webView.X5WebViewExtension.RegisterEmbeddedWidget(tags, new WidgetClientFactory(webView));
         }
         else
         {

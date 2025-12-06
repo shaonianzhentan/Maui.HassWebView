@@ -1,4 +1,3 @@
-
 using HassWebView.Core;
 using System.Diagnostics;
 using System;
@@ -9,31 +8,32 @@ using HassWebView.Core.Services;
 
 namespace HassWebView.Demo
 {
+    // This class was part of your original file and is needed by the HttpServer
     public class EchoData
     {
         public string Message { get; set; }
     }
 
-    public partial class MainPage : ContentPage
+    public partial class MainPage : ContentPage, IKeyHandler
     {
-        private readonly KeyService _keyService;
         private readonly HttpServer _httpServer;
-        private CursorControl cursorControl;
+        private CursorControl _cursorControl;
 
-        public MainPage(KeyService keyService)
+        public MainPage()
         {
             InitializeComponent();
-            _keyService = keyService;
 
+            // Your original event subscriptions
             wv.Navigating += Wv_Navigating;
             wv.Navigated += Wv_Navigated;
             wv.ResourceLoading += Wv_ResourceLoading;
             Loaded += MainPage_Loaded;
-            cursorControl = new CursorControl(cursor, root, wv);
+            _cursorControl = new CursorControl(cursor, root, wv);
 
             _httpServer = new HttpServer(8080);
         }
 
+        // Your original WebView and Page lifecycle methods
         private void Wv_ResourceLoading(object? sender, ResourceLoadingEventArgs e)
         {
             Debug.WriteLine($"ResourceLoading: {e.Url}");
@@ -44,8 +44,6 @@ namespace HassWebView.Demo
                  urlString.Contains(".m3u8", StringComparison.OrdinalIgnoreCase)))
             {
                 Debug.WriteLine($"Video resource detected: {urlString}. Adding to video panel.");
-
-                // Use the static VideoService to add the video link
                 MainThread.BeginInvokeOnMainThread(async () =>
                 {
                     await VideoService.AddVideo(wv, urlString);
@@ -124,44 +122,36 @@ namespace HassWebView.Demo
 
             await _httpServer.StartAsync();
 
-            wv.Source = $"http://{HttpServer.GetLocalIPv4Address()}:8080/";
-            Debug.WriteLine(wv.Source);
-        }
-
-        protected override void OnAppearing()
-        {
-            base.OnAppearing();
-            Debug.WriteLine("MainPage Appearing: Subscribing to KeyService events.");
-            _keyService.SingleClick += OnSingleClick;
-            _keyService.DoubleClick += OnDoubleClick;
-            _keyService.LongClick += OnLongClick;
-            _keyService.KeyDown += _keyService_KeyDown;
-            _keyService.KeyUp += OnKeyUp;
-        }
-
-        private void _keyService_KeyDown(RemoteKeyEventArgs e)
-        {
-            if (e.KeyName == "VolumeUp" || e.KeyName == "VolumeDown")
-            {
-                e.Handled = false;
-                return;
-            }
+            MainThread.BeginInvokeOnMainThread(() => {
+                wv.Source = $"http://{HttpServer.GetLocalIPv4Address()}:8080/";
+                Debug.WriteLine(wv.Source);
+            });
         }
 
         protected override void OnDisappearing()
         {
             base.OnDisappearing();
-            Debug.WriteLine("MainPage Disappearing: Unsubscribing from KeyService events.");
-            _keyService.SingleClick -= OnSingleClick;
-            _keyService.DoubleClick -= OnDoubleClick;
-            _keyService.LongClick -= OnLongClick;
-            _keyService.KeyUp -= OnKeyUp;
-            wv.Navigating -= Wv_Navigating;
-            wv.Navigated -= Wv_Navigated;
             _httpServer.Stop();
         }
 
-        private void OnSingleClick(RemoteKeyEventArgs e)
+        // --- IKeyHandler Implementation ---
+
+        public bool OnKeyDown(KeyService sender, RemoteKeyEventArgs args)
+        {
+            if (args.KeyName == "VolumeUp" || args.KeyName == "VolumeDown")
+            {
+                return false; // Let the system handle volume keys
+            }
+            return true; // We will handle all other keys
+        }
+
+        public void OnKeyUp(KeyService sender, RemoteKeyEventArgs args)
+        {
+            Debug.WriteLine($"--- OnKeyUp: {args.KeyName} ---");
+            sender.StopRepeatingAction();
+        }
+
+        public void OnSingleClick(KeyService sender, RemoteKeyEventArgs e)
         {
             MainThread.BeginInvokeOnMainThread(async () =>
             {
@@ -172,7 +162,7 @@ namespace HassWebView.Demo
                         if (wv.IsVideoFullscreen)
                            await VideoService.TogglePlayPause(wv);
                         else
-                            cursorControl.Click();
+                            _cursorControl.Click();
                         break;
 
                     case "Escape":
@@ -185,12 +175,12 @@ namespace HassWebView.Demo
 
                     case "Up":
                     case "DpadUp":
-                        cursorControl.MoveUpBy();
+                        _cursorControl.MoveUpBy();
                         break;
 
                     case "Down":
                     case "DpadDown":
-                        cursorControl.MoveDownBy();
+                        _cursorControl.MoveDownBy();
                         break;
 
                     case "Left":
@@ -198,7 +188,7 @@ namespace HassWebView.Demo
                         if (wv.IsVideoFullscreen)
                             VideoService.VideoSeek(wv,-5);
                         else
-                            cursorControl.MoveLeftBy();
+                            _cursorControl.MoveLeftBy();
                         break;
 
                     case "Right":
@@ -206,7 +196,7 @@ namespace HassWebView.Demo
                         if (wv.IsVideoFullscreen)
                             VideoService.VideoSeek(wv,5);
                         else
-                            cursorControl.MoveRightBy();
+                            _cursorControl.MoveRightBy();
                         break;
                     case "A":
                         wv.UserAgent = "Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/UQ1A.240105.004; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.210 Mobile Safari/537.36";
@@ -223,7 +213,7 @@ namespace HassWebView.Demo
             });
         }
 
-        private void OnDoubleClick(RemoteKeyEventArgs e)
+        public void OnDoubleClick(KeyService sender, RemoteKeyEventArgs e)
         {
             MainThread.BeginInvokeOnMainThread(async () =>
             {
@@ -231,40 +221,34 @@ namespace HassWebView.Demo
                 {
                     case "Enter":
                     case "DpadCenter":
-                        await cursorControl.DoubleClick();
+                        await _cursorControl.DoubleClick();
                         break;
 
                     case "Up":
                     case "DpadUp":
-                        cursorControl.SlideUp();
+                        _cursorControl.SlideUp();
                         break;
 
                     case "Down":
                     case "DpadDown":
-                        cursorControl.SlideDown();
+                        _cursorControl.SlideDown();
                         break;
 
                     case "Left":
                     case "DpadLeft":
-                        cursorControl.SlideLeft();
+                        _cursorControl.SlideLeft();
                         break;
 
                     case "Right":
                     case "DpadRight":
-                        cursorControl.SlideRight();
+                        _cursorControl.SlideRight();
                         break;
                 }
             });
         }
 
-        private void OnLongClick(RemoteKeyEventArgs e)
+        public void OnLongClick(KeyService sender, RemoteKeyEventArgs e)
         {
-            if (e.KeyName == "VolumeUp" || e.KeyName == "VolumeDown")
-            {
-                e.Handled = false;
-                return;
-            }
-
             Debug.WriteLine($"--- OnLongClick: {e.KeyName} ---");
             int repeatInterval = 100;
 
@@ -272,32 +256,27 @@ namespace HassWebView.Demo
             {
                 case "Up":
                 case "DpadUp":
-                    _keyService.StartRepeatingAction(() => cursorControl.MoveUpBy(), repeatInterval);
+                    sender.StartRepeatingAction(() => _cursorControl.MoveUpBy(), repeatInterval);
                     break;
                 case "Down":
                 case "DpadDown":
-                    _keyService.StartRepeatingAction(() => cursorControl.MoveDownBy(), repeatInterval);
+                    sender.StartRepeatingAction(() => _cursorControl.MoveDownBy(), repeatInterval);
                     break;
                 case "Left":
                 case "DpadLeft":
                     if (wv.IsVideoFullscreen)
                         VideoService.VideoSeek(wv,-15);
                     else
-                        _keyService.StartRepeatingAction(() => cursorControl.MoveLeftBy(), repeatInterval);
+                        sender.StartRepeatingAction(() => _cursorControl.MoveLeftBy(), repeatInterval);
                     break;
                 case "Right":
                 case "DpadRight":
                     if (wv.IsVideoFullscreen)
                         VideoService.VideoSeek(wv,15);
                     else
-                        _keyService.StartRepeatingAction(() => cursorControl.MoveRightBy(), repeatInterval);
+                        sender.StartRepeatingAction(() => _cursorControl.MoveRightBy(), repeatInterval);
                     break;
             }
-        }
-
-        private void OnKeyUp(RemoteKeyEventArgs e)
-        {
-            Debug.WriteLine($"--- OnKeyUp: {e.KeyName} ---");
         }
     }
 }

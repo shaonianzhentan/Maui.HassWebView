@@ -3,9 +3,6 @@ using HassWebView.Core.Services;
 
 namespace HassWebView.Core.Platforms.Android
 {
-    /// <summary>
-    /// Custom Window.Callback to intercept key events before they reach the rest of the app.
-    /// </summary>
     public class KeyCallback : Java.Lang.Object, AndroidNative.Views.Window.ICallback
     {
         private readonly AndroidNative.Views.Window.ICallback _originalCallback;
@@ -24,39 +21,32 @@ namespace HassWebView.Core.Platforms.Android
                 return _originalCallback?.DispatchKeyEvent(e) ?? false;
             }
 
-            // Convert Android KeyCode to our cross-platform key name string
             string keyName = GetKeyName(e.KeyCode);
 
             if (keyName != null)
             {
                 if (e.Action == AndroidNative.Views.KeyEventActions.Down)
                 {
-                    // --- THE NEW, CORRECT LOGIC ---
-                    // 1. Call OnPressed and check its boolean result.
-                    bool shouldBeHandled = _keyService.OnPressed(keyName);
-                    
-                    // 2. If KeyService says it will handle it, we return true to intercept.
-                    if (shouldBeHandled)
+                    // If KeyService handles it, we return true.
+                    if (_keyService.OnPressed(keyName))
                     {
-                        return true; 
+                        return true;
                     }
                 }
                 else if (e.Action == AndroidNative.Views.KeyEventActions.Up)
                 {
-                    _keyService.OnReleased();
-                    // We return true to signify we've "seen" the KeyUp, preventing duplicate processing.
-                    return true;
+                    // If KeyService handles it, we return true.
+                    if (_keyService.OnReleased())
+                    {
+                        return true;
+                    }
                 }
             }
 
-            // 3. If not handled by our service (i.e., shouldBeHandled was false),
-            //    we pass the event to the original system callback.
+            // If our service didn't handle the event, pass it to the original callback.
             return _originalCallback?.DispatchKeyEvent(e) ?? false;
         }
 
-        /// <summary>
-        /// Maps Android Keycode to the cross-platform key name string.
-        /// </summary>
         private string GetKeyName(AndroidNative.Views.Keycode keyCode)
         {
             return keyCode switch
@@ -71,11 +61,11 @@ namespace HassWebView.Core.Platforms.Android
                 AndroidNative.Views.Keycode.Escape => "Escape",
                 AndroidNative.Views.Keycode.VolumeUp => "VolumeUp",
                 AndroidNative.Views.Keycode.VolumeDown => "VolumeDown",
-                _ => keyCode.ToString(), // Return the string representation for unmapped keys
+                _ => keyCode.ToString(),
             };
         }
 
-        #region Boilerplate: Delegate all other ICallback methods to the original
+        #region Boilerplate
         public bool DispatchGenericMotionEvent(AndroidNative.Views.MotionEvent? e) => _originalCallback?.DispatchGenericMotionEvent(e) ?? false;
         public bool DispatchKeyShortcutEvent(AndroidNative.Views.KeyEvent? e) => _originalCallback?.DispatchKeyShortcutEvent(e) ?? false;
         public bool DispatchPopulateAccessibilityEvent(AndroidNative.Views.Accessibility.AccessibilityEvent? e) => _originalCallback?.DispatchPopulateAccessibilityEvent(e) ?? false;
