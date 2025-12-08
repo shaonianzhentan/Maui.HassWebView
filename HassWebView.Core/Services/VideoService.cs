@@ -37,11 +37,7 @@ namespace HassWebView.Core.Services
             }});
 
             item.addEventListener('click', () => {{
-                if (window.HassJsBridge && window.HassJsBridge.OpenVideoPlayer) {{
-                    window.HassJsBridge.OpenVideoPlayer(videoUrl);
-                }} else {{
-                    console.error('HassJsBridge.OpenVideoPlayer not found.');
-                }}
+                window.location.href = videoUrl;
             }});
         }}
 
@@ -66,27 +62,39 @@ namespace HassWebView.Core.Services
 
         public static void VideoSeek(HassWebView webView, int sencond)
         {
+#if ANDROID
+            if (webView.Handler?.PlatformView is Com.Tencent.Smtt.Sdk.WebView wv &&
+                wv.WebChromeClient is Platforms.Android.WebChromeClientHandler wc)
+            {
+                var view = wc._customView;
+                if (view != null)
+                {
+                    var y = (int)(webView.Height / 2);
+                    var startX = (int)(webView.Width / 2);
+                    var swipeDistance = (int)(webView.Width / 4); // Swipe a quarter of the screen width
+                    var endX = startX + (sencond > 0 ? swipeDistance : -swipeDistance);
+
+                    long downTime = Android.OS.SystemClock.UptimeMillis();
+                    
+                    var downEvent = Android.Views.MotionEvent.Obtain(downTime, downTime, Android.Views.MotionEventActions.Down, startX, y, 0);
+                    view.DispatchTouchEvent(downEvent);
+                    
+                    var moveEvent = Android.Views.MotionEvent.Obtain(downTime, downTime + 100, Android.Views.MotionEventActions.Move, endX, y, 0);
+                    view.DispatchTouchEvent(moveEvent);
+
+                    var upEvent = Android.Views.MotionEvent.Obtain(downTime, downTime + 150, Android.Views.MotionEventActions.Up, endX, y, 0);
+                    view.DispatchTouchEvent(upEvent);
+
+                    downEvent.Recycle();
+                    moveEvent.Recycle();
+                    upEvent.Recycle();
+                    return; 
+                }
+            }
+#endif
+            // JS Fallback for embedded videos in a webpage
             webView.EvaluateJavaScriptAsync($@"(function() {{
-                    function findFirstVideo(doc) {{
-                        let videos = Array.from(doc.getElementsByTagName('video'))
-                            .filter(v => v.src && v.src.trim() !== '');
-                        if (videos.length > 0) return videos[0];
-
-                        let iframes = doc.getElementsByTagName('iframe');
-                        for (let i = 0; i < iframes.length; i++) {{
-                            try {{
-                                let idoc = iframes[i].contentDocument || iframes[i].contentWindow.document;
-                                if (idoc) {{
-                                    let v = findFirstVideo(idoc);
-                                    if (v) return v;
-                                }}
-                            }} catch (e) {{
-
-                            }}
-                        }}
-                        return null;
-                    }}
-                    var video = findFirstVideo(document);
+                    var video = document.querySelector('video');
                     if (video) video.currentTime += {sencond};
                 }})()");
         }
@@ -94,27 +102,39 @@ namespace HassWebView.Core.Services
         public static async Task TogglePlayPause(HassWebView webView)
         {
 #if ANDROID
-                if(webView.Handler.PlatformView is Com.Tencent.Smtt.Sdk.WebView wv)
+            if (webView.Handler?.PlatformView is Com.Tencent.Smtt.Sdk.WebView wv &&
+                wv.WebChromeClient is Platforms.Android.WebChromeClientHandler wc)
+            {
+                var view = wc._customView;
+                if (view != null)
                 {
-                    if (wv.WebChromeClient is Platforms.Android.WebChromeClientHandler wc)
-                    {
-                        var view = wc._customView;
-                        var x = (int)webView.Width / 2;
-                                                var y = (int)webView.Height / 2;
-                        long downTime = Android.OS.SystemClock.UptimeMillis();
-                        long eventTime = downTime + 50;
+                    var x = (int)(webView.Width / 2);
+                    var y = (int)(webView.Height / 2);
+                    long downTime = Android.OS.SystemClock.UptimeMillis();
+                    
+                    var downEvent = Android.Views.MotionEvent.Obtain(downTime, downTime + 50, Android.Views.MotionEventActions.Down, x, y, 0);
+                    view.DispatchTouchEvent(downEvent);
 
-                        // 按下事件
-                        var downEvent = Android.Views.MotionEvent.Obtain(downTime, eventTime, Android.Views.MotionEventActions.Down, x, y, 0);
-                        // 抬起事件
-                        var upEvent = Android.Views.MotionEvent.Obtain(downTime, eventTime + 50, Android.Views.MotionEventActions.Up, x, y, 0);
+                    var upEvent = Android.Views.MotionEvent.Obtain(downTime, downTime + 100, Android.Views.MotionEventActions.Up, x, y, 0);
+                    view.DispatchTouchEvent(upEvent);
 
-                        // 派发事件到 view
-                        view.DispatchTouchEvent(downEvent);
-                        view.DispatchTouchEvent(upEvent);
-                    }
+                    downEvent.Recycle();
+                    upEvent.Recycle();
+                    return;
                 }
+            }
 #endif
+            // JS Fallback for embedded videos in a webpage
+            await webView.EvaluateJavaScriptAsync(@"(function() {
+                    var video = document.querySelector('video');
+                    if (video) {
+                        if (video.paused) {
+                            video.play();
+                        } else {
+                            video.pause();
+                        }
+                    }
+                })()");
         }
     }
 }

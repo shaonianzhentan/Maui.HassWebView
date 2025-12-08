@@ -42,6 +42,11 @@ namespace HassWebView.Demo
             Debug.WriteLine($"ResourceLoading: {e.Url}");
             var urlString = e.Url.ToString();
 
+            if (wv.Source is UrlWebViewSource source && source.Url == urlString)
+            {
+                return;
+            }
+
             if (urlString.StartsWith("http", StringComparison.OrdinalIgnoreCase) &&
                 (urlString.Contains(".mp4", StringComparison.OrdinalIgnoreCase) || 
                  urlString.Contains(".m3u8", StringComparison.OrdinalIgnoreCase)))
