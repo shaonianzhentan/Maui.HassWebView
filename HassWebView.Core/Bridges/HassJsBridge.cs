@@ -1,23 +1,14 @@
 using System;
-#if ANDROID
-using Android.Webkit;
-using Java.Lang;
-#endif
 
 namespace HassWebView.Core.Bridges
 {
-#if ANDROID
-    public class HassJsBridge : Java.Lang.Object
-#else
-    public class HassJsBridge
-#endif
+    // This is the shared part of the HassJsBridge class.
+    // The class and its platform-specific methods are marked as partial.
+    public partial class HassJsBridge
     {
-#if ANDROID
-        [JavascriptInterface]
-#endif
-        public void Test(string message)
-        {
-            Console.WriteLine($"HassJsBridge.Test called with message: {message}");
-        }
+        // A parameterless constructor is required for a clean, decoupled design.
+        public HassJsBridge() { }
+
+        public partial void OpenVideoPlayer(string url, string headers);
     }
 }

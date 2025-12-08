@@ -25,7 +25,18 @@ namespace HassWebView.Demo
             InitializeComponent();
 
             // Register the cross-platform JavaScript bridge
-            wv.JsBridges.Add("device", new HassDeviceBridge());
+            wv.JsBridges.Add("externalApp", new ExternalApp((type, msg) =>
+            {
+                switch (type)
+                {
+                    case "getExternalAuth":
+                        // 处理获取授权逻辑
+                        break;
+                    case "revokeExternalAuth":
+                        // 处理撤销授权逻辑
+                        break;
+                }
+            }));
 
             // Add the behavior programmatically
             this.Behaviors.Add(new RemoteControlBehavior());
