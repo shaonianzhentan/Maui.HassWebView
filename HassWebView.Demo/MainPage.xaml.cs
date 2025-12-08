@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using HassWebView.Core.Events;
 using HassWebView.Core.Services;
 using HassWebView.Core.Behaviors;
+using HassWebView.Demo.Bridges;
 
 namespace HassWebView.Demo
 {
@@ -22,6 +23,9 @@ namespace HassWebView.Demo
         public MainPage()
         {
             InitializeComponent();
+
+            // Register the cross-platform JavaScript bridge
+            wv.JsBridges.Add("device", new HassDeviceBridge());
 
             // Add the behavior programmatically
             this.Behaviors.Add(new RemoteControlBehavior());

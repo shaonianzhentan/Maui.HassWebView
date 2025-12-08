@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading.Tasks;
+using HassWebView.Core.Bridges; // Add this using statement
 using HassWebView.Core.Events;
 
 namespace HassWebView.Core;
@@ -10,16 +11,13 @@ public class HassWebView : WebView
 {
     public HassWebView()
     {
-        JsBridges = new Dictionary<string, object>
-        {
-#if ANDROID
-            { Platforms.Android.HassJsBridge.BridgeName, new Platforms.Android.HassJsBridge() }
-#endif
-        };
+        // Automatically register the built-in HassJsBridge
+        JsBridges.Add("HassJsBridge", new HassJsBridge());
     }
 
     public static readonly BindableProperty JsBridgesProperty =
-        BindableProperty.Create(nameof(JsBridges), typeof(IDictionary<string, object>), typeof(HassWebView), null);
+        BindableProperty.Create(nameof(JsBridges), typeof(IDictionary<string, object>), typeof(HassWebView),
+            defaultValueCreator: bindable => new Dictionary<string, object>());
 
     public IDictionary<string, object> JsBridges
     {
@@ -60,7 +58,6 @@ public class HassWebView : WebView
         VideoPlayingFullscreen?.Invoke(this, isVideoFullscreen);
     }
 
-
     public event EventHandler<WebNavigatingEventArgs> Navigating;
     public event EventHandler<WebNavigatedEventArgs> Navigated;
     public event EventHandler<ResourceLoadingEventArgs> ResourceLoading;
@@ -94,7 +91,7 @@ public class HassWebView : WebView
         Handler.Invoke(nameof(EvaluateJavaScriptAsync), new EvaluateJavaScriptAsyncRequest(tcs, script));
         return tcs.Task;
     }
-    
+
     public void SimulateTouch(int x, int y)
     {
         if (Handler == null)
@@ -114,6 +111,7 @@ public class HassWebView : WebView
 
         Handler.Invoke(nameof(SimulateTouchSlide), new SimulateTouchSlideRequest(x1, y1, x2, y2, duration));
     }
+
     public void ExitFullscreen()
     {
         if (Handler == null) return;
@@ -123,8 +121,7 @@ public class HassWebView : WebView
     internal class EvaluateJavaScriptAsyncRequest
     {
         public EvaluateJavaScriptAsyncRequest(TaskCompletionSource<string> tcs, string script)
-        {
-            TaskCompletionSource = tcs;
+        {            TaskCompletionSource = tcs;
             Script = script;
         }
 
