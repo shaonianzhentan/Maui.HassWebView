@@ -19,13 +19,15 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
     {
         [nameof(HassWebView.Source)] = (handler, view) =>
         {
-            var url = (view.Source as UrlWebViewSource)?.Url;
-            if (!string.IsNullOrEmpty(url))
+            if (handler.PlatformView is not WebView wv) return;
+
+            if (view.Source is UrlWebViewSource urlSource && !string.IsNullOrEmpty(urlSource.Url))
             {
-                if (handler.PlatformView is WebView wv)
-                {
-                    wv.LoadUrl(url);
-                }
+                wv.LoadUrl(urlSource.Url);
+            }
+            else if (view.Source is HtmlWebViewSource htmlSource && !string.IsNullOrEmpty(htmlSource.Html))
+            {
+                wv.LoadDataWithBaseURL(htmlSource.BaseUrl, htmlSource.Html, "text/html", "UTF-8", null);
             }
         },
         [nameof(HassWebView.UserAgent)] = (handler, view) =>
@@ -224,9 +226,14 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
             }
         }
 
-        var url = (VirtualView.Source as UrlWebViewSource)?.Url;
-        if (!string.IsNullOrEmpty(url))
-            platformView.LoadUrl(url);
+        if (VirtualView.Source is UrlWebViewSource urlSource && !string.IsNullOrEmpty(urlSource.Url))
+        {
+            platformView.LoadUrl(urlSource.Url);
+        }
+        else if (VirtualView.Source is HtmlWebViewSource htmlSource && !string.IsNullOrEmpty(htmlSource.Html))
+        {
+            platformView.LoadDataWithBaseURL(htmlSource.BaseUrl, htmlSource.Html, "text/html", "UTF-8", null);
+        }
     }
 
     protected override void DisconnectHandler(WebView platformView)

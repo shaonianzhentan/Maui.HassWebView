@@ -5,6 +5,8 @@ using Microsoft.Maui.Platform;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
 using System;
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace HassWebView.Core.Platforms.Windows;
@@ -14,17 +16,15 @@ using WebView = Microsoft.UI.Xaml.Controls.WebView2;
 public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
 {
     private JsBridgeHandler _jsBridgeHandler;
+    private string _pendingHtml;
+    private string _pendingBaseUrl;
 
     public static PropertyMapper Mapper = new PropertyMapper<HassWebView>()
     {
         [nameof(HassWebView.Source)] = (handler, view) =>
         {
-            if (handler.PlatformView is not WebView wv) return;
-            var url = (view.Source as UrlWebViewSource)?.Url;
-            if (!string.IsNullOrEmpty(url) && wv.CoreWebView2 != null)
-            {
-                wv.Source = new Uri(url);
-            }
+            if (handler is not HassWebViewHandler h) return;
+            h.LoadSource(view.Source);
         },
         [nameof(HassWebView.UserAgent)] = (handler, view) =>
         {
@@ -180,16 +180,22 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
                 await core.AddScriptToExecuteOnDocumentCreatedAsync(proxyScript);
             }
         }
-
-        var url = (VirtualView.Source as UrlWebViewSource)?.Url;
-        if (!string.IsNullOrEmpty(url))
-        {
-            sender.Source = new Uri(url);
-        }
+        LoadSource(VirtualView.Source);
     }
 
     private void Core_WebResourceRequested(CoreWebView2 sender, CoreWebView2WebResourceRequestedEventArgs args)
     {
+        if (!string.IsNullOrEmpty(_pendingBaseUrl) && args.Request.Uri == _pendingBaseUrl)
+        {
+            var response = sender.Environment.CreateWebResourceResponse(
+                new MemoryStream(Encoding.UTF8.GetBytes(_pendingHtml)),
+                200, "OK", "Content-Type: text/html; charset=utf-8");
+            args.Response = response;
+            _pendingHtml = null;
+            _pendingBaseUrl = null;
+            return;
+        }
+
         var mauiArgs = new ResourceLoadingEventArgs(args.Request.Uri);
         if (VirtualView.SendResourceLoading(mauiArgs))
         {
@@ -211,6 +217,25 @@ public class HassWebViewHandler : ViewHandler<HassWebView, WebView>
         VirtualView.SendNavigated(mauiArgs);
         VirtualView.CanGoBack = sender.CanGoBack;
         VirtualView.CanGoForward = sender.CanGoForward;
+    }
+
+    void LoadSource(WebViewSource source)
+    {
+        if (PlatformView?.CoreWebView2 == null)
+            return;
+
+        if (source is UrlWebViewSource urlSource)
+        {
+            _pendingHtml = null;
+            _pendingBaseUrl = null;
+            PlatformView.CoreWebView2.Navigate(urlSource.Url);
+        }
+        else if (source is HtmlWebViewSource htmlSource)
+        {
+            _pendingHtml = htmlSource.Html;
+            _pendingBaseUrl = htmlSource.BaseUrl ?? "http://local.html";
+            PlatformView.CoreWebView2.Navigate(_pendingBaseUrl);
+        }
     }
 
     protected override void DisconnectHandler(WebView platformView)
