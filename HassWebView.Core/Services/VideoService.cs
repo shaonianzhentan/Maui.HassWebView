@@ -37,7 +37,8 @@ namespace HassWebView.Core.Services
             }});
 
             item.addEventListener('click', () => {{
-                window.location.href = videoUrl;
+                //window.location.href = videoUrl;
+                window.HassJsBridge.OpenVideoPlayer(videoUrl)
             }});
         }}
 
@@ -58,6 +59,40 @@ namespace HassWebView.Core.Services
         {
             var script = "(function() { var div = document.getElementById('video-panel-container'); if (div) { div.style.display = div.style.display === 'none' ? 'flex' : 'none'; } })();";
             return webView.EvaluateJavaScriptAsync(script);
+        }
+
+        public static Task HtmlWebView(HassWebView webView, string videoUrl){
+            // 使用 CSS 实现视频全屏铺满
+            string htmlContent = $@"
+                <html>
+                <head>
+                    <style>
+                        body {{ margin: 0; padding: 0; background-color: black; }}
+                        video {{
+                            width: 100vw;
+                            height: 100vh;
+                            object-fit: contain; /* 保持比例，覆盖整个视口，可以改为 'cover' 如果想裁剪 */
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <video controls autoplay src='{videoUrl}' type='video/mp4'></video>
+                </body>
+                </html>";
+
+            // 2. 创建 HtmlWebViewSource
+            var htmlSource = new HtmlWebViewSource
+            {
+                Html = htmlContent,
+                
+                // BaseUrl 可以是 null 或 videoUrl 的域名，
+                // 如果视频链接是绝对路径，这个属性影响不大，但最好设置以满足同源策略。
+                BaseUrl = videoUrl.Contains("http") ? new Uri(videoUrl).GetLeftPart(UriPartial.Authority) : null
+            };
+
+            // 3. 将 Source 赋值给你的 WebView 控件
+            // 假设你的 WebView 控件名为 'videoWebView'
+            webView.Source = htmlSource;
         }
 
         public static void VideoSeek(HassWebView webView, int sencond)

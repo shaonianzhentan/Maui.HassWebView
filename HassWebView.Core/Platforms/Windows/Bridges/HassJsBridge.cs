@@ -6,11 +6,9 @@ namespace HassWebView.Core.Bridges
     public partial class HassJsBridge
     {
 
-        public void OpenVideoPlayer(string url, string headers)
+        public void OpenVideoPlayer(string url)
         {
-            // Similar to Android, the JsBridgeHandler on Windows intercepts this call.
-            // This body is not strictly necessary but is good for debugging.
-            Console.WriteLine($"HassJsBridge.OpenVideoPlayer call intercepted on Windows.");
+            VideoService.HtmlWebView(wv, url);
         }
     }
 }

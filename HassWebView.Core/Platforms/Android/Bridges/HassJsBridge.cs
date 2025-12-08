@@ -7,12 +7,9 @@ namespace HassWebView.Core.Bridges
     {
 
         [JavascriptInterface]
-        public void OpenVideoPlayer(string url, string headers)
+        public void OpenVideoPlayer(string url)
         {
-            // The actual implementation for OpenVideoPlayer on Android will be handled by
-            // the JsBridgeHandler intercepting the call and invoking the corresponding
-            // method on the HassWebView. This body can remain empty or contain logging.
-            Console.WriteLine($"HassJsBridge.OpenVideoPlayer call intercepted on Android.");
+            VideoService.HtmlWebView(wv, url);
         }
     }
 }
