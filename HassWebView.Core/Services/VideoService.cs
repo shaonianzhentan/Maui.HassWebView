@@ -61,75 +61,8 @@ namespace HassWebView.Core.Services
             return webView.EvaluateJavaScriptAsync(script);
         }
 
-        public static void HtmlWebView(HassWebView webView, string videoUrl){
-            // 使用 CSS 实现视频全屏铺满
-            string htmlContent = $@"
-                <html>
-                <head>
-                    <style>
-                        body {{ margin: 0; padding: 0; background-color: black; }}
-                        video {{
-                            width: 100vw;
-                            height: 100vh;
-                            object-fit: contain; /* 保持比例，覆盖整个视口，可以改为 'cover' 如果想裁剪 */
-                        }}
-                    </style>
-                </head>
-                <body>
-                    <video controls autoplay src='{videoUrl}'></video>
-                </body>
-                </html>";
-
-            // 2. 创建 HtmlWebViewSource
-            var htmlSource = new HtmlWebViewSource
-            {
-                Html = htmlContent,
-                
-                // BaseUrl 可以是 null 或 videoUrl 的域名，
-                // 如果视频链接是绝对路径，这个属性影响不大，但最好设置以满足同源策略。
-                BaseUrl = videoUrl.Contains("http") ? new Uri(videoUrl).GetLeftPart(UriPartial.Authority) : null
-            };
-
-            // 3. 将 Source 赋值给你的 WebView 控件
-            // 假设你的 WebView 控件名为 'videoWebView'
-            MainThread.BeginInvokeOnMainThread(() =>
-            {
-                webView.Source = htmlSource;
-            });
-        }
-
         public static void VideoSeek(HassWebView webView, int sencond)
         {
-#if ANDROID
-            if (webView.Handler?.PlatformView is Com.Tencent.Smtt.Sdk.WebView wv &&
-                wv.WebChromeClient is Platforms.Android.WebChromeClientHandler wc)
-            {
-                var view = wc._customView;
-                if (view != null)
-                {
-                    var y = (int)(webView.Height / 2);
-                    var startX = (int)(webView.Width / 2);
-                    var swipeDistance = (int)(webView.Width / 4); // Swipe a quarter of the screen width
-                    var endX = startX + (sencond > 0 ? swipeDistance : -swipeDistance);
-
-                    long downTime = Android.OS.SystemClock.UptimeMillis();
-                    
-                    var downEvent = Android.Views.MotionEvent.Obtain(downTime, downTime, Android.Views.MotionEventActions.Down, startX, y, 0);
-                    view.DispatchTouchEvent(downEvent);
-                    
-                    var moveEvent = Android.Views.MotionEvent.Obtain(downTime, downTime + 100, Android.Views.MotionEventActions.Move, endX, y, 0);
-                    view.DispatchTouchEvent(moveEvent);
-
-                    var upEvent = Android.Views.MotionEvent.Obtain(downTime, downTime + 150, Android.Views.MotionEventActions.Up, endX, y, 0);
-                    view.DispatchTouchEvent(upEvent);
-
-                    downEvent.Recycle();
-                    moveEvent.Recycle();
-                    upEvent.Recycle();
-                    return; 
-                }
-            }
-#endif
             // JS Fallback for embedded videos in a webpage
             webView.EvaluateJavaScriptAsync($@"(function() {{
                     var video = document.querySelector('video');
@@ -139,29 +72,6 @@ namespace HassWebView.Core.Services
 
         public static async Task TogglePlayPause(HassWebView webView)
         {
-#if ANDROID
-            if (webView.Handler?.PlatformView is Com.Tencent.Smtt.Sdk.WebView wv &&
-                wv.WebChromeClient is Platforms.Android.WebChromeClientHandler wc)
-            {
-                var view = wc._customView;
-                if (view != null)
-                {
-                    var x = (int)(webView.Width / 2);
-                    var y = (int)(webView.Height / 2);
-                    long downTime = Android.OS.SystemClock.UptimeMillis();
-                    
-                    var downEvent = Android.Views.MotionEvent.Obtain(downTime, downTime + 50, Android.Views.MotionEventActions.Down, x, y, 0);
-                    view.DispatchTouchEvent(downEvent);
-
-                    var upEvent = Android.Views.MotionEvent.Obtain(downTime, downTime + 100, Android.Views.MotionEventActions.Up, x, y, 0);
-                    view.DispatchTouchEvent(upEvent);
-
-                    downEvent.Recycle();
-                    upEvent.Recycle();
-                    return;
-                }
-            }
-#endif
             // JS Fallback for embedded videos in a webpage
             await webView.EvaluateJavaScriptAsync(@"(function() {
                     var video = document.querySelector('video');

@@ -1,4 +1,5 @@
 
+using HassWebView.Core.Behaviors;
 using HassWebView.Core.Events;
 using HassWebView.Core.Services;
 
@@ -9,6 +10,7 @@ public partial class MediaPage : ContentPage, IKeyHandler
 	public MediaPage(string url)
 	{
 		InitializeComponent();
+        this.Behaviors.Add(new RemoteControlBehavior());
         LoadUrl(url);
     }
 
@@ -42,25 +44,18 @@ public partial class MediaPage : ContentPage, IKeyHandler
             wv.Source = htmlSource;
     }
 
-    public void OnDoubleClick(KeyService sender, RemoteKeyEventArgs args)
-    {
-
-    }
-
     public bool OnKeyDown(KeyService sender, RemoteKeyEventArgs args)
     {
-        return true;
+        if (args.KeyName == "VolumeUp" || args.KeyName == "VolumeDown")
+        {
+            return false; // Let the system handle volume keys
+        }
+        return true; // We will handle all other keys
     }
 
     public void OnKeyUp(KeyService sender, RemoteKeyEventArgs args)
     {
-
         sender.StopRepeatingAction();
-    }
-
-    public void OnLongClick(KeyService sender, RemoteKeyEventArgs args)
-    {
-
     }
 
     public void OnSingleClick(KeyService sender, RemoteKeyEventArgs e)
@@ -79,25 +74,38 @@ public partial class MediaPage : ContentPage, IKeyHandler
                     await Shell.Current.GoToAsync("..");
                     break;
 
-                case "Up":
-                case "DpadUp":
-
-                    break;
-
-                case "Down":
-                case "DpadDown":
-
-                    break;
-
                 case "Left":
                 case "DpadLeft":
-                    VideoService.VideoSeek(wv, -5); break;
+                    VideoService.VideoSeek(wv, -5); 
+                    break;
 
                 case "Right":
                 case "DpadRight":
-                    VideoService.VideoSeek(wv, 5); break;
+                    VideoService.VideoSeek(wv, 5); 
+                    break;
             }
         });
+    }
+    
+    public void OnDoubleClick(KeyService sender, RemoteKeyEventArgs args)
+    {
+        // No action 
+    }
 
+
+    public void OnLongClick(KeyService sender, RemoteKeyEventArgs e)
+    {
+        int repeatInterval = 100;
+        switch (e.KeyName)
+        {
+            case "Left":
+            case "DpadLeft":
+                sender.StartRepeatingAction(() => VideoService.VideoSeek(wv, -15), repeatInterval);
+                break;
+            case "Right":
+            case "DpadRight":
+                sender.StartRepeatingAction(() => VideoService.VideoSeek(wv, 15), repeatInterval);
+                break;
+        }
     }
 }
