@@ -23,6 +23,10 @@ namespace HassWebView.Demo
     		builder.Logging.AddDebug();
 #endif
 
+            // Register pages for dependency injection
+            builder.Services.AddTransient<MainPage>();
+            builder.Services.AddTransient<MediaPage>();
+
             return builder.Build();
         }
     }

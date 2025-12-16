@@ -1,20 +1,50 @@
-
-using HassWebView.Core.Behaviors;
 using HassWebView.Core.Events;
 using HassWebView.Core.Services;
+using System.Diagnostics;
 
 namespace HassWebView.Demo;
 
-public partial class MediaPage : ContentPage, IKeyHandler
+[QueryProperty(nameof(Url), "Url")]
+public partial class MediaPage : ContentPage
 {
-	public MediaPage(string url)
+    private readonly KeyService _keyService;
+    public string Url { get; set; }
+
+	public MediaPage(KeyService keyService)
 	{
 		InitializeComponent();
-        this.Behaviors.Add(new RemoteControlBehavior());
-        LoadUrl(url);
+        _keyService = keyService;
     }
 
-    void LoadUrl(string videoUrl){
+    protected override void OnNavigatedTo(NavigatedToEventArgs args)
+    {
+        base.OnNavigatedTo(args);
+        LoadUrl(Url); 
+    }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        _keyService.KeyDown += OnKeyDown;
+        _keyService.SingleClick += OnSingleClick;
+        _keyService.DoubleClick += OnDoubleClick;
+        _keyService.LongClick += OnLongClick;
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        _keyService.KeyDown -= OnKeyDown;
+        _keyService.SingleClick -= OnSingleClick;
+        _keyService.DoubleClick -= OnDoubleClick;
+        _keyService.LongClick -= OnLongClick;
+    }
+
+    void LoadUrl(string videoUrl)
+    {
+        if (string.IsNullOrEmpty(videoUrl)) return;
+        Debug.WriteLine($"Loading video URL: {videoUrl}");
+
         string htmlContent = $@"
                 <html>
                 <head>
@@ -23,7 +53,7 @@ public partial class MediaPage : ContentPage, IKeyHandler
                         video {{
                             width: 100vw;
                             height: 100vh;
-                            object-fit: contain; /* 保持比例，覆盖整个视口，可以改为 'cover' 如果想裁剪 */
+                            object-fit: contain;
                         }}
                     </style>
                 </head>
@@ -32,14 +62,9 @@ public partial class MediaPage : ContentPage, IKeyHandler
                 </body>
                 </html>";
 
-            // 2. 创建 HtmlWebViewSource
             var htmlSource = new HtmlWebViewSource
             {
-                Html = htmlContent,
-                
-                // BaseUrl 可以是 null 或 videoUrl 的域名，
-                // 如果视频链接是绝对路径，这个属性影响不大，但最好设置以满足同源策略。
-                BaseUrl = videoUrl.Contains("http") ? new Uri(videoUrl).GetLeftPart(UriPartial.Authority) : null
+                Html = htmlContent
             };
             wv.Source = htmlSource;
     }
@@ -54,7 +79,6 @@ public partial class MediaPage : ContentPage, IKeyHandler
 
     void PlayPause()
     {
-        // JS Fallback for embedded videos in a webpage
         wv.EvaluateJavaScriptAsync(@"(function() {
                 var video = document.querySelector('video');
                 if (video) {
@@ -67,7 +91,7 @@ public partial class MediaPage : ContentPage, IKeyHandler
             })()");
     }
 
-    public bool OnKeyDown(KeyService sender, RemoteKeyEventArgs args)
+    public bool OnKeyDown(object sender, RemoteKeyEventArgs args)
     {
         if (args.KeyName == "VolumeUp" || args.KeyName == "VolumeDown")
         {
@@ -76,14 +100,9 @@ public partial class MediaPage : ContentPage, IKeyHandler
         return true; // We will handle all other keys
     }
 
-    public void OnKeyUp(KeyService sender, RemoteKeyEventArgs args)
+    public void OnSingleClick(object sender, RemoteKeyEventArgs e)
     {
-        sender.StopRepeatingAction();
-    }
-
-    public void OnSingleClick(KeyService sender, RemoteKeyEventArgs e)
-    {
-        MainThread.BeginInvokeOnMainThread(async () =>
+        MainThread.InvokeOnMainThreadAsync(async () =>
         {
             switch (e.KeyName)
             {
@@ -94,7 +113,7 @@ public partial class MediaPage : ContentPage, IKeyHandler
 
                 case "Escape":
                 case "Back":
-                    await Navigation.PopAsync();
+                    await Shell.Current.GoToAsync("..");
                     break;
 
                 case "Left":
@@ -110,23 +129,23 @@ public partial class MediaPage : ContentPage, IKeyHandler
         });
     }
     
-    public void OnDoubleClick(KeyService sender, RemoteKeyEventArgs args)
+    public void OnDoubleClick(object sender, RemoteKeyEventArgs args)
     {
         // No action 
     }
 
-    public void OnLongClick(KeyService sender, RemoteKeyEventArgs e)
+    public void OnLongClick(object sender, RemoteKeyEventArgs e)
     {
         int repeatInterval = 100;
         switch (e.KeyName)
         {
             case "Left":
             case "DpadLeft":
-                sender.StartRepeatingAction(() => VideoSeek(-15), repeatInterval);
+                _keyService.StartRepeatingAction(() => VideoSeek(-15), repeatInterval);
                 break;
             case "Right":
             case "DpadRight":
-                sender.StartRepeatingAction(() => VideoSeek(15), repeatInterval);
+                _keyService.StartRepeatingAction(() => VideoSeek(15), repeatInterval);
                 break;
         }
     }
