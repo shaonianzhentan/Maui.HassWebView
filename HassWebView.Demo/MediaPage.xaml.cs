@@ -62,11 +62,14 @@ public partial class MediaPage : ContentPage
                 </body>
                 </html>";
 
-            var htmlSource = new HtmlWebViewSource
-            {
-                Html = htmlContent
-            };
-            wv.Source = htmlSource;
+        var uri = new Uri(videoUrl);
+        var htmlSource = new HtmlWebViewSource
+        {
+            BaseUrl = $"{uri.Scheme}://{uri.Host}/",
+            Html = htmlContent
+        };
+        Debug.WriteLine("Setting WebView source with HTML content.");
+        wv.Source = htmlSource;
     }
 
     void VideoSeek(int sencond)
