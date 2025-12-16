@@ -54,7 +54,6 @@ namespace HassWebView.Demo
 
             // Subscribe to KeyService events
             _keyService.KeyDown += OnKeyDown;
-            _keyService.KeyUp += OnKeyUp;
             _keyService.SingleClick += OnSingleClick;
             _keyService.DoubleClick += OnDoubleClick;
             _keyService.LongClick += OnLongClick;
@@ -153,7 +152,6 @@ namespace HassWebView.Demo
             _httpServer.Stop();
             // Unsubscribe from KeyService events to prevent memory leaks
             _keyService.KeyDown -= OnKeyDown;
-            _keyService.KeyUp -= OnKeyUp;
             _keyService.SingleClick -= OnSingleClick;
             _keyService.DoubleClick -= OnDoubleClick;
             _keyService.LongClick -= OnLongClick;
@@ -168,12 +166,6 @@ namespace HassWebView.Demo
                 return false; // Let the system handle volume keys
             }
             return true; // We will handle all other keys
-        }
-
-        private void OnKeyUp(object sender, RemoteKeyEventArgs args)
-        {
-            Debug.WriteLine($"--- OnKeyUp: {args.KeyName} ---");
-            _keyService.StopRepeatingAction();
         }
 
         private void OnSingleClick(object sender, RemoteKeyEventArgs e)
@@ -234,7 +226,7 @@ namespace HassWebView.Demo
                         break;
                     case "Left":
                     case "DpadLeft":
-                        _cursorcontrol.SlideLeft();
+                        _cursorControl.SlideLeft();
                         break;
                     case "Right":
                     case "DpadRight":

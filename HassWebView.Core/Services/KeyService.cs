@@ -98,6 +98,8 @@ public class KeyService
 
     public bool OnReleased()
     {
+        StopRepeatingAction();
+
         if (_lastKey == null && !_longPressHasFired)
         {
             return false;
