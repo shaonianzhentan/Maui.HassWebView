@@ -125,18 +125,6 @@ public static class MauiAppBuilderExtensions
                         window.Callback = new Platforms.Android.KeyCallback(originalCallback, keyService);
                     }
                 });
-
-                android.OnResume(activity =>
-                {
-                    var keyService = MauiApplication.Current.Services.GetService<KeyService>();
-                    keyService?.Enable();
-                });
-
-                android.OnPause(activity =>
-                {
-                    var keyService = MauiApplication.Current.Services.GetService<KeyService>();
-                    keyService?.Disable();
-                });
             });
 #endif
         });
@@ -146,8 +134,6 @@ public static class MauiAppBuilderExtensions
         {
             var keyService = handler.MauiContext?.Services.GetService<KeyService>();
             if (keyService == null) return;
-
-            keyService.Enable(); // For Windows, we enable it for the lifetime of the window.
 
             if (handler.PlatformView.Content is not UIElement ui) return;
             

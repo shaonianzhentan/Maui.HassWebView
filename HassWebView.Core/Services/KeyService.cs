@@ -1,13 +1,19 @@
 using System.Diagnostics;
 using Microsoft.Maui.ApplicationModel;
 using HassWebView.Core.Events;
+using System;
+using System.Threading;
 
 namespace HassWebView.Core.Services;
 
 public class KeyService
 {
-    private IKeyHandler _currentHandler;
-    private bool _isEnabled = false; // Disabled by default
+    // Events for key actions
+    public event Func<object, RemoteKeyEventArgs, bool> KeyDown;
+    public event Action<object, RemoteKeyEventArgs> KeyUp;
+    public event Action<object, RemoteKeyEventArgs> SingleClick;
+    public event Action<object, RemoteKeyEventArgs> DoubleClick;
+    public event Action<object, RemoteKeyEventArgs> LongClick;
 
     private readonly int _longPressTimeout;
     private readonly int _doubleClickTimeout;
@@ -26,35 +32,8 @@ public class KeyService
         _doubleClickTimeout = doubleClickTimeout;
     }
 
-    public void Enable() 
-    {
-        Debug.WriteLine("[KeyService] Enabled");
-        _isEnabled = true; 
-    }
-
-    public void Disable() 
-    {
-        Debug.WriteLine("[KeyService] Disabled");
-        _isEnabled = false; 
-    }
-
-    public void Register(IKeyHandler handler)
-    {
-        Debug.WriteLine($"[KeyService] Registering handler: {handler.GetType().Name}");
-        _currentHandler = handler;
-    }
-
-    public void Unregister()
-    {
-        Debug.WriteLine("[KeyService] Unregistering handler.");
-        _currentHandler = null;
-        ResetDoubleClickState();
-        StopRepeatingAction();
-    }
-
     public void StartRepeatingAction(Action action, int interval = 100)
     {
-        if (!_isEnabled || _currentHandler == null) return;
         StopRepeatingAction();
         _repeatingAction = action;
         _repeatingActionTimer = new Timer(RepeatingActionCallback, null, 0, interval);
@@ -75,13 +54,19 @@ public class KeyService
 
     public bool OnPressed(string keyName)
     {
-        if (!_isEnabled || _currentHandler == null)
-        {
-            return false;
-        }
-
         var args = new RemoteKeyEventArgs(keyName);
-        bool handled = _currentHandler.OnKeyDown(this, args);
+        bool handled = false;
+        if (KeyDown != null)
+        {
+            foreach (Func<object, RemoteKeyEventArgs, bool> handler in KeyDown.GetInvocationList())
+            {
+                if (handler(this, args))
+                {
+                    handled = true;
+                    break;
+                }
+            }
+        }
 
         if (!handled)
         {
@@ -113,19 +98,14 @@ public class KeyService
 
     public bool OnReleased()
     {
-        if (!_isEnabled || _currentHandler == null)
-        {
-             return false;
-        }
-
         if (_lastKey == null && !_longPressHasFired)
         {
             return false;
         }
-        
+
         if (_lastKey != null)
         {
-            _currentHandler.OnKeyUp(this, new RemoteKeyEventArgs(_lastKey));
+            KeyUp?.Invoke(this, new RemoteKeyEventArgs(_lastKey));
         }
 
         if (_longPressHasFired)
@@ -143,7 +123,7 @@ public class KeyService
         }
         else if (_pressCount >= 2)
         {
-            _currentHandler.OnDoubleClick(this, new RemoteKeyEventArgs(_lastKey));
+            DoubleClick?.Invoke(this, new RemoteKeyEventArgs(_lastKey));
             ResetDoubleClickState();
         }
 
@@ -152,15 +132,14 @@ public class KeyService
 
     private void LongPressTimerCallback(object state)
     {
-        if (!_isEnabled || _longPressHasFired) return;
+        if (_longPressHasFired) return;
         _longPressHasFired = true;
-        _currentHandler?.OnLongClick(this, new RemoteKeyEventArgs((string)state));
+        LongClick?.Invoke(this, new RemoteKeyEventArgs((string)state));
     }
 
     private void DoubleClickTimerCallback(object state)
     {
-        if (!_isEnabled) return;
-        _currentHandler?.OnSingleClick(this, new RemoteKeyEventArgs((string)state));
+        SingleClick?.Invoke(this, new RemoteKeyEventArgs((string)state));
         ResetDoubleClickState();
     }
 

@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using HassWebView.Core.Events;
 using HassWebView.Core.Services;
-using HassWebView.Core.Behaviors;
 using HassWebView.Core.Bridges;
 
 namespace HassWebView.Demo
@@ -11,14 +10,16 @@ namespace HassWebView.Demo
         public string Message { get; set; }
     }
 
-    public partial class MainPage : ContentPage, IKeyHandler
+    public partial class MainPage : ContentPage
     {
         private readonly HttpServer _httpServer;
+        private readonly KeyService _keyService;
         private CursorControl _cursorControl;
 
-        public MainPage()
+        public MainPage(KeyService keyService)
         {
             InitializeComponent();
+            _keyService = keyService;
 
             // Register the cross-platform JavaScript bridge
             wv.JsBridges.Add("externalApp", new ExternalApp((type, msg) =>
@@ -26,10 +27,10 @@ namespace HassWebView.Demo
                 switch (type)
                 {
                     case "getExternalAuth":
-                        // 处理获取授权逻辑
+                        // Handle authorization logic
                         break;
                     case "revokeExternalAuth":
-                        // 处理撤销授权逻辑
+                        // Handle revocation logic
                         break;
                 }
             }));
@@ -45,29 +46,28 @@ namespace HassWebView.Demo
                 }
             }));
 
-            // Add the behavior programmatically
-            this.Behaviors.Add(new RemoteControlBehavior());
-
-            // Your original event subscriptions
+            // Subscribe to WebView and Page lifecycle events
             wv.Navigating += Wv_Navigating;
             wv.Navigated += Wv_Navigated;
             wv.ResourceLoading += Wv_ResourceLoading;
             Loaded += MainPage_Loaded;
-            _cursorControl = new CursorControl(cursor, root, wv);
 
+            // Subscribe to KeyService events
+            _keyService.KeyDown += OnKeyDown;
+            _keyService.KeyUp += OnKeyUp;
+            _keyService.SingleClick += OnSingleClick;
+            _keyService.DoubleClick += OnDoubleClick;
+            _keyService.LongClick += OnLongClick;
+
+            _cursorControl = new CursorControl(cursor, root, wv);
             _httpServer = new HttpServer(8080);
         }
 
-        // Your original WebView and Page lifecycle methods
         private void Wv_ResourceLoading(object? sender, ResourceLoadingEventArgs e)
         {
             Debug.WriteLine($"ResourceLoading: {e.Url}");
             var urlString = e.Url.ToString();
-            // 如果当前是视频页面，则阻止拦截
-            if (wv.Source is HtmlWebViewSource)
-            {
-                return;
-            }
+            if (wv.Source is HtmlWebViewSource) return;
 
             if (urlString.StartsWith("http", StringComparison.OrdinalIgnoreCase) &&
                 (urlString.Contains(".mp4", StringComparison.OrdinalIgnoreCase) || 
@@ -96,10 +96,7 @@ namespace HassWebView.Demo
                     wv.UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36";
                 }
             }
-            catch (Exception)
-            {
-                // Invalid URL
-            }
+            catch (Exception) { /* Invalid URL */ }
         }
 
         private void Wv_Navigated(object sender, WebNavigatedEventArgs e)
@@ -114,14 +111,13 @@ namespace HassWebView.Demo
 
         private async Task StartHttpServer()
         {
-            _httpServer.Get("/", async (HttpServer.Request req, HttpServer.Response res) =>
+            _httpServer.Get("/", async (req, res) =>
             {
                 try
                 {
                     using var stream = await FileSystem.OpenAppPackageFileAsync("index.html");
                     using var reader = new StreamReader(stream);
-                    var htmlContent = await reader.ReadToEndAsync();
-                    await res.Html(htmlContent);
+                    await res.Html(await reader.ReadToEndAsync());
                 }
                 catch (Exception ex)
                 {
@@ -129,25 +125,18 @@ namespace HassWebView.Demo
                 }
             });
 
-            _httpServer.Get("/api/info", async (HttpServer.Request req, HttpServer.Response res) =>
+            _httpServer.Get("/api/info", async (req, res) =>
             {
                 var name = req.Query["name"] ?? "World";
                 var data = new { Message = $"Hello, {name}!", LocalIP = HttpServer.GetLocalIPv4Address(), CurrentTime = DateTime.Now };
                 await res.Json(data);
             });
 
-            _httpServer.Post("/api/echo", async (HttpServer.Request req, HttpServer.Response res) =>
+            _httpServer.Post("/api/echo", async (req, res) =>
             {
                 var receivedData = await req.JsonAsync<EchoData>();
                 var responseData = new { ReceivedMessage = receivedData.Message, Timestamp = DateTime.Now };
                 await res.Json(responseData);
-            });
-
-            _httpServer.Put("/api/data", async (HttpServer.Request req, HttpServer.Response res) =>
-            {
-                var rawBody = await req.BodyAsync();
-                Debug.WriteLine($"Raw data received via PUT: {rawBody}");
-                await res.Json(new { Status = "Success", Message = "Data received" });
             });
 
             await _httpServer.StartAsync();
@@ -162,11 +151,17 @@ namespace HassWebView.Demo
         {
             base.OnDisappearing();
             _httpServer.Stop();
+            // Unsubscribe from KeyService events to prevent memory leaks
+            _keyService.KeyDown -= OnKeyDown;
+            _keyService.KeyUp -= OnKeyUp;
+            _keyService.SingleClick -= OnSingleClick;
+            _keyService.DoubleClick -= OnDoubleClick;
+            _keyService.LongClick -= OnLongClick;
         }
 
-        // --- IKeyHandler Implementation ---
+        // --- Key Event Handlers ---
 
-        public bool OnKeyDown(KeyService sender, RemoteKeyEventArgs args)
+        private bool OnKeyDown(object sender, RemoteKeyEventArgs args)
         {
             if (args.KeyName == "VolumeUp" || args.KeyName == "VolumeDown")
             {
@@ -175,13 +170,13 @@ namespace HassWebView.Demo
             return true; // We will handle all other keys
         }
 
-        public void OnKeyUp(KeyService sender, RemoteKeyEventArgs args)
+        private void OnKeyUp(object sender, RemoteKeyEventArgs args)
         {
             Debug.WriteLine($"--- OnKeyUp: {args.KeyName} ---");
-            sender.StopRepeatingAction();
+            _keyService.StopRepeatingAction();
         }
 
-        public void OnSingleClick(KeyService sender, RemoteKeyEventArgs e)
+        private void OnSingleClick(object sender, RemoteKeyEventArgs e)
         {
             MainThread.BeginInvokeOnMainThread(async () =>
             {
@@ -189,43 +184,28 @@ namespace HassWebView.Demo
                 {
                     case "Enter":
                     case "DpadCenter":
-                            _cursorControl.Click();
+                        _cursorControl.Click();
                         break;
-
                     case "Escape":
                     case "Back":
-                        if (wv.IsVideoFullscreen)
-                            wv.ExitFullscreen();
-                        else if (wv.CanGoBack)
-                            wv.GoBack();
+                        if (wv.IsVideoFullscreen) wv.ExitFullscreen();
+                        else if (wv.CanGoBack) wv.GoBack();
                         break;
-
                     case "Up":
                     case "DpadUp":
                         _cursorControl.MoveUpBy();
                         break;
-
                     case "Down":
                     case "DpadDown":
                         _cursorControl.MoveDownBy();
                         break;
-
                     case "Left":
                     case "DpadLeft":
-                            _cursorControl.MoveLeftBy();
+                        _cursorControl.MoveLeftBy();
                         break;
-
                     case "Right":
                     case "DpadRight":
-                            _cursorControl.MoveRightBy();
-                        break;
-                    case "A":
-                        wv.UserAgent = "Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/UQ1A.240105.004; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.210 Mobile Safari/537.36";
-                        wv.Source = "https://www.baidu.com";
-                        break;
-                    case "B":
-                        wv.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
-                        wv.Source = "https://www.baidu.com";
+                        _cursorControl.MoveRightBy();
                         break;
                     case "M":
                         await VideoService.ToggleVideoPanel(wv);
@@ -234,7 +214,7 @@ namespace HassWebView.Demo
             });
         }
 
-        public void OnDoubleClick(KeyService sender, RemoteKeyEventArgs e)
+        private void OnDoubleClick(object sender, RemoteKeyEventArgs e)
         {
             MainThread.BeginInvokeOnMainThread(async () =>
             {
@@ -244,22 +224,18 @@ namespace HassWebView.Demo
                     case "DpadCenter":
                         await _cursorControl.DoubleClick();
                         break;
-
                     case "Up":
                     case "DpadUp":
                         _cursorControl.SlideUp();
                         break;
-
                     case "Down":
                     case "DpadDown":
                         _cursorControl.SlideDown();
                         break;
-
                     case "Left":
                     case "DpadLeft":
-                        _cursorControl.SlideLeft();
+                        _cursorcontrol.SlideLeft();
                         break;
-
                     case "Right":
                     case "DpadRight":
                         _cursorControl.SlideRight();
@@ -268,7 +244,7 @@ namespace HassWebView.Demo
             });
         }
 
-        public void OnLongClick(KeyService sender, RemoteKeyEventArgs e)
+        private void OnLongClick(object sender, RemoteKeyEventArgs e)
         {
             Debug.WriteLine($"--- OnLongClick: {e.KeyName} ---");
             int repeatInterval = 100;
@@ -277,19 +253,19 @@ namespace HassWebView.Demo
             {
                 case "Up":
                 case "DpadUp":
-                    sender.StartRepeatingAction(() => _cursorControl.MoveUpBy(), repeatInterval);
+                    _keyService.StartRepeatingAction(() => _cursorControl.MoveUpBy(), repeatInterval);
                     break;
                 case "Down":
                 case "DpadDown":
-                    sender.StartRepeatingAction(() => _cursorControl.MoveDownBy(), repeatInterval);
+                    _keyService.StartRepeatingAction(() => _cursorControl.MoveDownBy(), repeatInterval);
                     break;
                 case "Left":
                 case "DpadLeft":
-                        sender.StartRepeatingAction(() => _cursorControl.MoveLeftBy(), repeatInterval);
+                    _keyService.StartRepeatingAction(() => _cursorControl.MoveLeftBy(), repeatInterval);
                     break;
                 case "Right":
                 case "DpadRight":
-                        sender.StartRepeatingAction(() => _cursorControl.MoveRightBy(), repeatInterval);
+                    _keyService.StartRepeatingAction(() => _cursorControl.MoveRightBy(), repeatInterval);
                     break;
             }
         }
