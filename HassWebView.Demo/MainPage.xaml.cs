@@ -203,6 +203,7 @@ namespace HassWebView.Demo
                     case "DpadRight":
                         _cursorControl.MoveRightBy();
                         break;
+                    case "Menu":
                     case "M":
                         await VideoService.ToggleVideoPanel(wv);
                         break;

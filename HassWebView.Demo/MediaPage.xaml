@@ -5,5 +5,5 @@
              xmlns:hass="clr-namespace:HassWebView.Core;assembly=HassWebView.Core"
              Shell.NavBarIsVisible="False"
              Title="MediaPage">
-    <hass:HassWebView x:Name="wv" Source="https://www.baidu.com" />
+    <hass:HassWebView x:Name="wv" />
 </ContentPage>

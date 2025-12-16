@@ -14,11 +14,35 @@ public partial class MediaPage : ContentPage
 	{
 		InitializeComponent();
         _keyService = keyService;
+        /*
+        wv.Navigated += (s, e) =>
+        {
+            Debug.WriteLine($"WebView navigated to: {e.Url}");
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                wv.EvaluateJavaScriptAsync($@"
+var meta = document.createElement('meta');
+meta.name = 'viewport';
+meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+document.getElementsByTagName('head')[0].appendChild(meta);
+
+document.documentElement.style.height = '{Height}px';
+document.body.style.height = '{Height}px';
+document.body.style.margin = '0';
+document.body.style.backgroundColor = 'black';
+
+document.body.innerHTML = `<video controls autoplay src='{Url}' style='width: 100%; height: 100%; object-fit: contain; position:fixed; top:0; left:0; background:black;'></video>`
+                ");
+            });
+        };
+        */
     }
 
     protected override void OnNavigatedTo(NavigatedToEventArgs args)
     {
         base.OnNavigatedTo(args);
+        var uri = new Uri(Url);
+        //wv.Source = $"{uri.Scheme}://{uri.Host}/";
         LoadUrl(Url); 
     }
 
@@ -48,13 +72,10 @@ public partial class MediaPage : ContentPage
         string htmlContent = $@"
                 <html>
                 <head>
+                    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0'>
                     <style>
-                        body {{ margin: 0; padding: 0; background-color: black; }}
-                        video {{
-                            width: 100vw;
-                            height: 100vh;
-                            object-fit: contain;
-                        }}
+                        html,body {{ margin: 0; padding: 0; height: {wv.Height}px; background-color: black; }}
+                        video {{ width: 100%; height: 100%; object-fit: contain;  }}
                     </style>
                 </head>
                 <body>
